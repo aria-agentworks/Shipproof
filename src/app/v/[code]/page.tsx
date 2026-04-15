@@ -228,7 +228,7 @@ export default function VerifyPage({ params }: { params: Promise<{ code: string 
         <Card className="overflow-hidden">
           <div className="bg-black">
             <video
-              src={video.videoData || `/api/video/${video.videoFilename}`}
+              src={`/api/video-data/${code}`}
               controls
               className="w-full"
               playsInline

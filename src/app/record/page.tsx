@@ -21,12 +21,10 @@ import {
   Keyboard,
   ShieldAlert,
   Wifi,
-  Pause,
-  Play,
 } from 'lucide-react'
 
 // State machine:
-// idle → (scan/manual) → ready → (tap record) → recording → (tap stop) → preview → (enter email) → details → sending → done
+// idle → (scan/manual) → ready → (tap record) → recording → (tap stop) → preview → (enter email) → sending → done
 type PageStep = 'idle' | 'scanning' | 'ready' | 'recording' | 'preview' | 'details' | 'sending' | 'done'
 
 export default function RecordPage() {
@@ -53,6 +51,7 @@ export default function RecordPage() {
   const animFrameRef = useRef<number>(0)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const uniqueCodeRef = useRef<string>(generateUniqueCode(6))
+  const cameraInitLock = useRef(false) // Prevents double-init
 
   // Camera state
   const [cameraReady, setCameraReady] = useState(false)
@@ -70,12 +69,8 @@ export default function RecordPage() {
   const classifyError = useCallback((err: any) => {
     const name = err?.name || ''
     const msg = (err?.message || '').toLowerCase()
-
     if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-      return {
-        type: 'permission' as const,
-        message: 'Camera access was denied. Tap the lock icon in your browser address bar, allow camera, then reload.',
-      }
+      return { type: 'permission' as const, message: 'Camera access was denied. Tap the lock icon in your browser address bar, allow camera, then reload.' }
     }
     if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
       return { type: 'notfound' as const, message: 'No camera found. Make sure it is not in use by another app.' }
@@ -102,7 +97,7 @@ export default function RecordPage() {
       cvs.height = vid.videoHeight
       ctx.drawImage(vid, 0, 0)
 
-      // Top bar: SHIPPROOF + code
+      // Top bar
       const topBarH = Math.max(40, cvs.height * 0.055)
       ctx.fillStyle = 'rgba(0,0,0,0.5)'
       ctx.fillRect(0, 0, cvs.width, topBarH)
@@ -114,7 +109,7 @@ export default function RecordPage() {
       const codeW = ctx.measureText(code).width
       ctx.fillText(code, cvs.width - codeW - 10, topBarH / 2 + smallFs / 3)
 
-      // Bottom bar: order ID + timestamp
+      // Bottom bar
       const barH = Math.max(64, cvs.height * 0.085)
       ctx.fillStyle = 'rgba(0,0,0,0.75)'
       ctx.fillRect(0, cvs.height - barH, cvs.width, barH)
@@ -125,7 +120,7 @@ export default function RecordPage() {
       ctx.font = `bold ${fs}px monospace`
       ctx.fillStyle = '#fff'
       const ts = new Date().toISOString().replace('T', ' ').substring(0, 19)
-      ctx.fillText(oId ? `#${oId}` : 'Scanning...', 12, cvs.height - barH / 2 + fs / 3)
+      ctx.fillText(oId ? `#${oId}` : '', 12, cvs.height - barH / 2 + fs / 3)
       const tsW = ctx.measureText(ts).width
       ctx.fillText(ts, (cvs.width - tsW) / 2, cvs.height - barH / 2 + fs / 3)
 
@@ -145,8 +140,18 @@ export default function RecordPage() {
     drawFrame()
   }, [])
 
-  // ---- Camera init ----
+  // ---- Camera init (with lock to prevent double-init) ----
   const initCamera = useCallback(async (facing: 'environment' | 'user') => {
+    // Prevent double-init from competing calls
+    if (cameraInitLock.current) return
+    // If camera is already streaming, just mark ready
+    if (streamRef.current && streamRef.current.active) {
+      setCameraReady(true)
+      setInitializing(false)
+      return
+    }
+
+    cameraInitLock.current = true
     try {
       setCameraError(null)
       setCameraErrorType(null)
@@ -192,6 +197,8 @@ export default function RecordPage() {
       setCameraErrorType(classified.type)
       setCameraReady(false)
       setInitializing(false)
+    } finally {
+      cameraInitLock.current = false
     }
   }, [classifyError])
 
@@ -204,47 +211,40 @@ export default function RecordPage() {
     setCameraReady(false)
   }, [])
 
-  // ---- Start camera ONLY when entering idle or recording step ----
+  // ---- Camera lifecycle: init on mount ONLY ----
   useEffect(() => {
-    if (step === 'idle' || step === 'recording') {
-      initCamera(facingMode)
-    }
+    initCamera(facingMode)
     return () => {
-      // Only stop camera when leaving camera-needing steps
-      if (step !== 'recording' && step !== 'idle') {
-        stopCamera()
-      }
+      stopCamera()
+      if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step])
+  }, [])
 
-  // ---- Redraw overlay when orderId changes during recording ----
+  // ---- Re-init camera ONLY when facingMode changes ----
+  useEffect(() => {
+    // Don't touch camera during scanning or recording
+    if (step === 'scanning' || step === 'recording') return
+    if (step === 'idle' || step === 'ready') {
+      // Re-init with new facing mode
+      stopCamera()
+      cameraInitLock.current = false // Reset lock so init can proceed
+      setTimeout(() => initCamera(facingMode), 100)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facingMode])
+
+  // ---- Overlay: redraw when camera becomes ready during recording ----
   useEffect(() => {
     if (!cameraReady || step !== 'recording' || !videoRef.current || !canvasRef.current) return
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
     drawOverlay(videoRef.current, canvasRef.current, uniqueCodeRef.current, orderId, true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId, cameraReady, step, drawOverlay])
+  }, [cameraReady, step])
 
-  // ---- Recording ----
-  const beginRecording = useCallback(async () => {
-    // If camera isn't ready yet, wait for it
-    if (!cameraReady) {
-      setStep('recording') // This triggers camera init via the useEffect above
-      // Wait for camera to be ready, then start recording
-      return
-    }
-
-    uniqueCodeRef.current = generateUniqueCode(6)
-    setStep('recording')
-
-    // Small delay to let step change propagate
-    await new Promise(r => setTimeout(r, 100))
-
-    if (!canvasRef.current) {
-      setStep('ready')
-      return
-    }
+  // ---- Start MediaRecorder (shared logic) ----
+  const startMediaRecorder = useCallback(() => {
+    if (!canvasRef.current) return
 
     try {
       const canvasStream = canvasRef.current.captureStream(30)
@@ -286,57 +286,31 @@ export default function RecordPage() {
     }
   }, [cameraReady, orderId, drawOverlay, stopCamera, toast])
 
-  // When camera becomes ready during recording step, start recording
+  // ---- When step becomes 'recording' and camera is ready, auto-start capture ----
   useEffect(() => {
     if (step === 'recording' && cameraReady && !mediaRecorderRef.current) {
-      // Camera just became ready, start the actual recording
       const startCapture = async () => {
-        await new Promise(r => setTimeout(r, 200)) // Small delay for video to stabilize
-        if (!canvasRef.current) { setStep('ready'); return }
-
+        // Brief delay for video to stabilize on screen
+        await new Promise(r => setTimeout(r, 300))
         uniqueCodeRef.current = generateUniqueCode(6)
-        try {
-          const canvasStream = canvasRef.current.captureStream(30)
-          const mts = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
-          let mt = ''
-          for (const m of mts) { if (MediaRecorder.isTypeSupported(m)) { mt = m; break } }
-          if (!mt) {
-            toast({ title: 'Error', description: 'Browser does not support video recording.', variant: 'destructive' })
-            setStep('ready')
-            return
-          }
-
-          const mr = new MediaRecorder(canvasStream, { mimeType: mt, videoBitsPerSecond: 2500000 })
-          chunksRef.current = []
-          mr.ondataavailable = (e) => { if (e.data?.size > 0) chunksRef.current.push(e.data) }
-          mr.onstop = () => {
-            const blob = new Blob(chunksRef.current, { type: mt })
-            setVideoBlob(blob)
-            setUniqueCode(uniqueCodeRef.current)
-            setVideoUrl(URL.createObjectURL(blob))
-            stopCamera()
-            setStep('preview')
-            if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
-            setRecordingTime(0)
-          }
-          mediaRecorderRef.current = mr
-          mr.start(100)
-          timerRef.current = setInterval(() => setRecordingTime(p => p + 1), 1000)
-
-          // Start overlay with recording indicator
-          if (videoRef.current && canvasRef.current) {
-            drawOverlay(videoRef.current, canvasRef.current, uniqueCodeRef.current, orderId, true)
-          }
-        } catch (err) {
-          console.error('Recording error:', err)
-          toast({ title: 'Error', description: 'Failed to start recording.', variant: 'destructive' })
-          setStep('ready')
-        }
+        startMediaRecorder()
       }
       startCapture()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, cameraReady])
+
+  // ---- Begin recording (called when user taps record button) ----
+  const beginRecording = useCallback(() => {
+    uniqueCodeRef.current = generateUniqueCode(6)
+    setStep('recording')
+
+    if (cameraReady && canvasRef.current) {
+      // Camera is already running — start recording immediately
+      setTimeout(() => startMediaRecorder(), 100)
+    }
+    // If camera NOT ready yet, the useEffect above will catch it when cameraReady becomes true
+  }, [cameraReady, startMediaRecorder])
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current?.state === 'recording') {
@@ -349,11 +323,9 @@ export default function RecordPage() {
   const startScanner = useCallback(async () => {
     setStep('scanning')
     setScannerError(null)
+    stopCamera() // Release camera for scanner
 
     try {
-      // Stop camera to free up the camera device for the scanner
-      stopCamera()
-
       const { Html5Qrcode } = await import('html5-qrcode')
       const scanner = new Html5Qrcode('barcode-scanner')
       html5QrcodeRef.current = scanner
@@ -362,13 +334,19 @@ export default function RecordPage() {
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.5 },
         (decodedText: string) => {
-          // Successfully scanned — stop scanner, go to ready state
+          // Successfully scanned
           scanner.stop().then(() => {
             scanner.clear()
             html5QrcodeRef.current = null
-          }).catch(() => {})
+            // KEY FIX: Pre-warm camera in background so it's ready when user taps record
+            cameraInitLock.current = false
+            setTimeout(() => initCamera(facingMode), 500)
+          }).catch(() => {
+            cameraInitLock.current = false
+            setTimeout(() => initCamera(facingMode), 500)
+          })
           setOrderId(decodedText)
-          setStep('ready') // Go to ready — do NOT re-init camera
+          setStep('ready')
           toast({ title: 'Scanned!', description: `Order: ${decodedText}` })
         },
         () => {} // Ignore scan failures
@@ -376,25 +354,29 @@ export default function RecordPage() {
     } catch (err) {
       console.error('Scanner error:', err)
       setScannerError('Could not start scanner.')
-      setStep('idle') // Go back to idle — camera will re-init via useEffect
+      setStep('idle') // Camera will NOT auto-re-init (mount effect already ran)
+      // Manually re-init camera
+      cameraInitLock.current = false
+      setTimeout(() => initCamera(facingMode), 500)
     }
-  }, [stopCamera, toast])
+  }, [facingMode, initCamera, stopCamera, toast])
 
   const stopScanner = useCallback(async () => {
     try {
       if (html5QrcodeRef.current) {
         const state = html5QrcodeRef.current.getState()
-        if (state === 2) {
-          await html5QrcodeRef.current.stop()
-        }
+        if (state === 2) await html5QrcodeRef.current.stop()
         html5QrcodeRef.current.clear()
         html5QrcodeRef.current = null
       }
     } catch (e) {
       console.error('Error stopping scanner:', e)
     }
-    setStep('idle') // Back to idle — camera will re-init via useEffect
-  }, [])
+    setStep('idle')
+    // Re-init camera after scanner releases it
+    cameraInitLock.current = false
+    setTimeout(() => initCamera(facingMode), 500)
+  }, [facingMode, initCamera])
 
   // ---- Upload + Send (stores video as base64 in DB — works on serverless/Netlify) ----
   const handleSend = async () => {
@@ -414,7 +396,6 @@ export default function RecordPage() {
 
       setUploadProgress('Saving to database...')
 
-      // Save everything in one API call (video data + metadata)
       const rr = await fetch('/api/record', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -466,16 +447,14 @@ export default function RecordPage() {
     mediaRecorderRef.current = null
     chunksRef.current = []
     setStep('idle')
+    // Re-init camera after reset
+    cameraInitLock.current = false
+    setTimeout(() => initCamera(facingMode), 100)
   }
 
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
   const flipCamera = () => {
     setFacingMode(p => p === 'environment' ? 'user' : 'environment')
-    // Re-init camera with new facing mode
-    if (cameraReady) {
-      stopCamera()
-      setTimeout(() => initCamera(facingMode === 'environment' ? 'user' : 'environment'), 100)
-    }
   }
 
   const getErrorIcon = (type: string | null) => {
@@ -558,7 +537,7 @@ export default function RecordPage() {
   }
 
   // ==========================
-  // ======== DETAILS ========
+  // ======== DETAILS / SENDING ========
   // ==========================
   if (step === 'details' || step === 'sending') {
     return (
@@ -595,7 +574,7 @@ export default function RecordPage() {
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     {uploadProgress || 'Processing...'}
                   </Button>
-                  <p className="text-center text-xs text-gray-400">This may take a moment...</p>
+                  <p className="text-center text-xs text-gray-400">This may take a moment for longer videos...</p>
                 </div>
               ) : (
                 <Button
@@ -616,13 +595,12 @@ export default function RecordPage() {
     )
   }
 
-  // ============================================
-  // ======== READY (scanned, waiting) ==========
-  // ============================================
+  // ==========================
+  // ======== READY (scanned, waiting to record) ==========
+  // ==========================
   if (step === 'ready') {
     return (
       <div className="h-[100dvh] flex flex-col bg-gray-950 overflow-hidden">
-        {/* Header */}
         <div className="p-4 bg-gradient-to-b from-black/60 to-transparent">
           <div className="flex justify-between items-center">
             <button onClick={handleReset} className="h-10 w-10 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full transition-colors">
@@ -631,9 +609,7 @@ export default function RecordPage() {
           </div>
         </div>
 
-        {/* Main content */}
         <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-8">
-          {/* Scanned order */}
           <div className="text-center space-y-4">
             <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-500/40">
               <CheckCircle className="w-10 h-10 text-emerald-400" />
@@ -644,7 +620,6 @@ export default function RecordPage() {
             </div>
           </div>
 
-          {/* Instructions */}
           <div className="bg-white/5 rounded-2xl p-5 border border-white/10 max-w-xs w-full">
             <div className="space-y-3 text-sm text-gray-300">
               <div className="flex items-start gap-3">
@@ -662,7 +637,6 @@ export default function RecordPage() {
             </div>
           </div>
 
-          {/* Action buttons */}
           <div className="flex flex-col gap-3 w-full max-w-xs">
             <button
               onClick={beginRecording}
@@ -691,9 +665,9 @@ export default function RecordPage() {
     )
   }
 
-  // ============================================
+  // ==========================
   // ======== SCANNING ==========
-  // ============================================
+  // ==========================
   if (step === 'scanning') {
     return (
       <div className="h-[100dvh] flex flex-col bg-black overflow-hidden">
@@ -725,7 +699,6 @@ export default function RecordPage() {
             </>
           )}
         </div>
-        {/* Manual fallback */}
         <div className="p-4 bg-black/90 border-t border-white/10">
           <div className="flex gap-2">
             <input
@@ -737,6 +710,8 @@ export default function RecordPage() {
                 if (e.key === 'Enter' && orderId.trim()) {
                   stopScanner()
                   setStep('ready')
+                  cameraInitLock.current = false
+                  setTimeout(() => initCamera(facingMode), 500)
                   toast({ title: 'Order set', description: `#${orderId}` })
                 }
               }}
@@ -747,6 +722,8 @@ export default function RecordPage() {
                 if (orderId.trim()) {
                   stopScanner()
                   setStep('ready')
+                  cameraInitLock.current = false
+                  setTimeout(() => initCamera(facingMode), 500)
                   toast({ title: 'Order set', description: `#${orderId}` })
                 }
               }}
@@ -761,9 +738,9 @@ export default function RecordPage() {
     )
   }
 
-  // ============================================
+  // ==========================
   // ======== RECORDING ==========
-  // ============================================
+  // ==========================
   if (step === 'recording') {
     return (
       <div className="h-[100dvh] flex flex-col bg-black overflow-hidden">
@@ -771,9 +748,7 @@ export default function RecordPage() {
           <video
             ref={videoRef}
             className={`absolute inset-0 w-full h-full object-cover ${cameraReady ? '' : 'hidden'}`}
-            playsInline
-            muted
-            autoPlay
+            playsInline muted autoPlay
           />
           <canvas
             ref={canvasRef}
@@ -784,10 +759,10 @@ export default function RecordPage() {
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 text-white p-6">
               <Loader2 className="w-14 h-14 animate-spin text-red-400 mb-4" />
               <p className="text-sm text-gray-300">Starting camera for recording...</p>
+              <p className="text-xs text-gray-500 mt-2">Please wait...</p>
             </div>
           )}
 
-          {/* Recording timer */}
           {cameraReady && (
             <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-5 py-2.5 rounded-full text-sm font-mono font-bold flex items-center gap-2 shadow-lg z-20">
               <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
@@ -795,19 +770,14 @@ export default function RecordPage() {
             </div>
           )}
 
-          {/* Flip camera during recording */}
           {cameraReady && (
             <div className="absolute top-6 right-4 z-20">
-              <button
-                onClick={flipCamera}
-                className="h-10 w-10 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full transition-colors"
-              >
+              <button onClick={flipCamera} className="h-10 w-10 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-full transition-colors">
                 <RotateCcw className="w-5 h-5 text-white" />
               </button>
             </div>
           )}
 
-          {/* Stop button */}
           {cameraReady && (
             <div className="absolute bottom-0 left-0 right-0 p-6 pb-10 z-20">
               <div className="flex flex-col items-center gap-4">
@@ -826,26 +796,22 @@ export default function RecordPage() {
     )
   }
 
-  // ============================================
+  // ==========================
   // ======== IDLE (main camera view) ==========
-  // ============================================
+  // ==========================
   return (
     <div className="h-[100dvh] flex flex-col bg-black overflow-hidden">
       <div className="flex-1 relative">
-        {/* Camera feed */}
         <video
           ref={videoRef}
           className={`absolute inset-0 w-full h-full object-cover ${cameraReady ? '' : 'hidden'}`}
-          playsInline
-          muted
-          autoPlay
+          playsInline muted autoPlay
         />
         <canvas
           ref={canvasRef}
           className={`absolute inset-0 w-full h-full object-cover ${cameraReady ? '' : 'hidden'}`}
         />
 
-        {/* Camera loading / error */}
         {!cameraReady && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-950 text-white p-6">
             {initializing ? (
@@ -862,7 +828,7 @@ export default function RecordPage() {
                 })()}
                 <p className="text-sm text-gray-200 leading-relaxed">{cameraError}</p>
                 <div className="flex flex-col gap-2 mt-2 w-full">
-                  <button onClick={() => initCamera(facingMode)} className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
+                  <button onClick={() => { cameraInitLock.current = false; initCamera(facingMode) }} className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors">
                     <RotateCcw className="w-4 h-4" />Retry Camera
                   </button>
                   <button onClick={startScanner} className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors">
@@ -877,7 +843,6 @@ export default function RecordPage() {
           </div>
         )}
 
-        {/* Top controls */}
         {cameraReady && (
           <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/50 to-transparent z-20">
             <div className="flex justify-between items-center">
@@ -891,11 +856,9 @@ export default function RecordPage() {
           </div>
         )}
 
-        {/* Bottom controls */}
         {cameraReady && (
           <div className="absolute bottom-0 left-0 right-0 z-20">
             <div className="p-6 pb-10 space-y-5">
-              {/* Scan barcode button */}
               <div className="flex justify-center">
                 <button
                   onClick={startScanner}
@@ -906,7 +869,6 @@ export default function RecordPage() {
                 </button>
               </div>
 
-              {/* Order ID input */}
               <div className="flex justify-center">
                 <div className="flex items-center gap-2">
                   <input
@@ -916,15 +878,15 @@ export default function RecordPage() {
                     onChange={(e) => setOrderId(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && orderId.trim()) {
-                        stopCamera()
                         setStep('ready')
+                        toast({ title: 'Order set', description: `#${orderId}` })
                       }
                     }}
                     className="bg-black/50 backdrop-blur-lg rounded-full px-5 py-3 text-white text-sm w-60 placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-white/10 transition-all"
                   />
                   {orderId.trim() && (
                     <button
-                      onClick={() => { stopCamera(); setStep('ready') }}
+                      onClick={() => { setStep('ready'); toast({ title: 'Order set', description: `#${orderId}` }) }}
                       className="h-12 px-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
                     >
                       Go
@@ -933,7 +895,6 @@ export default function RecordPage() {
                 </div>
               </div>
 
-              {/* Hint text */}
               <p className="text-center text-white/50 text-xs">
                 Scan a barcode or type an order ID to start
               </p>

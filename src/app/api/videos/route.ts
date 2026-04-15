@@ -5,6 +5,22 @@ export async function GET() {
   try {
     const videos = await db.video.findMany({
       orderBy: { createdAt: 'desc' },
+      // Exclude videoData from list to keep response small
+      select: {
+        id: true,
+        orderId: true,
+        buyerEmail: true,
+        videoFilename: true,
+        uniqueCode: true,
+        status: true,
+        buyerConfirmed: true,
+        buyerConfirmedAt: true,
+        packageCondition: true,
+        buyerComment: true,
+        recordedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     })
     return NextResponse.json({ videos })
   } catch (error) {

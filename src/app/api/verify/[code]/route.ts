@@ -18,7 +18,10 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({ video })
+    // Return video metadata (exclude videoData to keep response small)
+    const { videoData, ...videoMeta } = video
+
+    return NextResponse.json({ video: { ...videoMeta, hasVideoData: !!videoData } })
   } catch (error) {
     console.error('Error fetching video:', error)
     return NextResponse.json(
