@@ -1,5 +1,5 @@
 [build]
-  command = "npx prisma generate && npx next build"
+  command = "DATABASE_URL='file:/dev/null' npx prisma generate && npx next build"
   publish = ".next"
 
 [[plugins]]
