@@ -22,6 +22,7 @@ import {
   Send,
 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface VideoData {
   id: string
@@ -200,12 +201,7 @@ export default function VerifyPage({ params }: { params: Promise<{ code: string 
       <header className="bg-white border-b">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center">
-              <Package className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-lg font-bold">
-              Ship<span className="text-emerald-600">Proof</span>
-            </span>
+            <Image src="/logo.jpeg" alt="ShipProof" width={28} height={49} className="h-7 w-auto rounded" />
           </div>
           <Badge variant="outline" className="text-xs">
             Verification

@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
-  /* config options here */
+  // Remove "standalone" — Netlify plugin handles output
+  images: {
+    unoptimized: true, // Netlify doesn't need image optimization
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
