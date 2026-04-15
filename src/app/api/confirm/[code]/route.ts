@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { sendSellerNotification } from '@/lib/email'
 
 const VALID_CONDITIONS = ['perfect', 'damaged', 'wrong_item', 'missing_parts']
 
@@ -30,7 +31,6 @@ export async function POST(
       )
     }
 
-    // Validate package condition if provided
     const condition = packageCondition && VALID_CONDITIONS.includes(packageCondition)
       ? packageCondition
       : null
@@ -44,6 +44,11 @@ export async function POST(
         ...(condition && { packageCondition: condition }),
         ...(buyerComment && { buyerComment: buyerComment.trim().substring(0, 500) }),
       },
+    })
+
+    // Notify seller (fire-and-forget — don't block the buyer response)
+    sendSellerNotification(video.id, condition || null, buyerComment || null).catch(err => {
+      console.error('Seller notification failed:', err)
     })
 
     return NextResponse.json({ video: updated, message: 'Receipt confirmed successfully!' })

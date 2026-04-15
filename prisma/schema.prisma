@@ -3,8 +3,11 @@ generator client {
 }
 
 datasource db {
+  // Turso uses libsql provider. SQLite still works for local dev.
   provider = "sqlite"
   url      = env("DATABASE_URL")
+  // Uncomment for Turso:
+  // directUrl = env("DIRECT_URL")  // Only needed if using connection pooling
 }
 
 model Video {
@@ -13,13 +16,17 @@ model Video {
   buyerEmail       String
   uniqueCode       String    @unique
   status           String    @default("recorded") // recorded, sent, confirmed
-  videoData        String? // base64 encoded video blob (for serverless hosting like Netlify)
-  videoFilename    String? // legacy: filesystem path (only works in non-serverless)
+  videoData        String?   // base64 encoded video blob (for serverless hosting like Netlify)
+  videoFilename    String?   // legacy: filesystem path (only works in non-serverless)
   buyerConfirmed   Boolean   @default(false)
   buyerConfirmedAt DateTime?
-  packageCondition String? // perfect, damaged, wrong_item, missing_parts
+  packageCondition String?   // perfect, damaged, wrong_item, missing_parts
   buyerComment     String?
   recordedAt       DateTime  @default(now())
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([buyerEmail])
+  @@index([status])
 }
