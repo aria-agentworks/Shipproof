@@ -36,3 +36,37 @@ Stage Summary:
 - Mobile-first design with barcode scanner, camera overlay, responsive dashboard
 - Netlify deployment config ready
 - Key files: prisma/schema.prisma, src/app/page.tsx, src/app/record/page.tsx, src/app/v/[code]/page.tsx, src/app/dashboard/page.tsx, src/components/camera-recorder.tsx, src/components/barcode-scanner.tsx
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix camera permission error, redesign landing page, improve scanner flow
+
+Work Log:
+- Diagnosed camera permission error: duplicate useEffect hooks (lines 126-130 and 133-137) both calling initCamera simultaneously, creating a race condition where two getUserMedia calls compete for the camera resource
+- Rewrote src/app/record/page.tsx with:
+  - Single camera init useEffect to eliminate race condition
+  - HTTPS detection with helpful error message for insecure context
+  - Detailed error classification (NotAllowedError, NotFoundError, NotReadableError, secure context)
+  - Recovery options when camera fails: Retry Camera, Try Scanner Instead, Type Order ID Manually
+  - Auto-generate order ID button (generates ORD-XXXXX) as fallback
+  - 300ms delay between scanner stop and camera re-init to prevent resource conflicts
+  - Better stream cleanup with try/catch around track.stop()
+  - Improved canvas overlay with SHIPPROOF watermark bar and green accent line
+- Redesigned src/app/page.tsx with professional mobile-first UI:
+  - Emerald gradient hero with grid pattern overlay and glassmorphism logo container
+  - Stats section (30s Scan to Send, 100% Tamper-Proof, 0 Disputes)
+  - 3-step "How It Works" with connected timeline and color-coded icons
+  - Feature grid (4 cards: Tamper-Proof, Mobile-First, Lightning Fast, Reduce Disputes)
+  - Platform social proof (Etsy, Shopify, WooCommerce, Amazon, eBay)
+  - CTA section with gradient card
+  - Professional dark footer with links
+- Updated src/components/header.tsx to emerald-700 theme with white text
+- Updated src/app/v/[code]/page.tsx header to emerald theme
+- Build verified clean (next build passes with no errors)
+
+Stage Summary:
+- Camera permission error FIXED: race condition eliminated, proper error handling with classified error messages and recovery flows
+- Landing page REDESIGNED: gradient hero, step-by-step how it works, feature grid, CTA, social proof, dark footer
+- Scanner flow IMPROVED: prominent scan button, better fallbacks, auto-generate order ID option
+- Consistent emerald theme across ALL pages (landing, header, record, verify, dashboard)

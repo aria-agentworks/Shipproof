@@ -4,34 +4,40 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Camera } from 'lucide-react'
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+    <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-emerald-700/95 backdrop-blur supports-[backdrop-filter]:bg-emerald-700/80">
       <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <Image
             src="/logo.jpeg"
             alt="ShipProof"
-            width={32}
-            height={56}
-            className="h-8 w-auto rounded"
+            width={28}
+            height={50}
+            className="h-8 w-auto rounded-md"
           />
+          <span className="font-bold text-white text-lg hidden sm:inline">ShipProof</span>
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden sm:flex items-center gap-2">
+        <nav className="hidden sm:flex items-center gap-1">
           <Link href="/record">
-            <Button variant="ghost" size="sm" className="text-gray-600">Record</Button>
+            <Button variant="ghost" size="sm" className="text-emerald-100 hover:text-white hover:bg-white/10">
+              <Camera className="w-4 h-4 mr-1.5" />
+              Record
+            </Button>
           </Link>
           <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="text-gray-600">Dashboard</Button>
+            <Button variant="ghost" size="sm" className="text-emerald-100 hover:text-white hover:bg-white/10">
+              Dashboard
+            </Button>
           </Link>
-          <Link href="/record">
-            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Link href="/record" className="ml-2">
+            <Button size="sm" className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold shadow-sm">
               Start Free
             </Button>
           </Link>
@@ -41,7 +47,7 @@ export default function Header() {
         <Button
           variant="ghost"
           size="icon"
-          className="sm:hidden"
+          className="sm:hidden text-white hover:bg-white/10"
           onClick={() => setMenuOpen(!menuOpen)}
         >
           {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -50,15 +56,20 @@ export default function Header() {
 
       {/* Mobile nav */}
       {menuOpen && (
-        <nav className="sm:hidden border-t bg-white px-4 py-3 space-y-2">
+        <nav className="sm:hidden border-t border-white/10 bg-emerald-800/95 backdrop-blur px-4 py-3 space-y-1">
           <Link href="/record" onClick={() => setMenuOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start text-gray-600">Record</Button>
+            <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/10">
+              <Camera className="w-4 h-4 mr-2" />
+              Record
+            </Button>
           </Link>
           <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start text-gray-600">Dashboard</Button>
+            <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/10">
+              Dashboard
+            </Button>
           </Link>
-          <Link href="/record" onClick={() => setMenuOpen(false)}>
-            <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Link href="/record" onClick={() => setMenuOpen(false)} className="pt-2">
+            <Button className="w-full bg-white text-emerald-700 hover:bg-emerald-50 font-semibold">
               Start Free
             </Button>
           </Link>

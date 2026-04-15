@@ -198,13 +198,15 @@ export default function VerifyPage({ params }: { params: Promise<{ code: string 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b">
+      <header className="bg-emerald-700 border-b border-emerald-600">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Image src="/logo.jpeg" alt="ShipProof" width={28} height={49} className="h-7 w-auto rounded" />
+            <Image src="/logo.jpeg" alt="ShipProof" width={28} height={49} className="h-7 w-auto rounded-md" />
+            <span className="font-bold text-white text-sm">ShipProof</span>
           </div>
-          <Badge variant="outline" className="text-xs">
-            Verification
+          <Badge className="text-xs bg-white/10 text-emerald-100 border-white/20 hover:bg-white/15">
+            <ShieldCheck className="w-3 h-3 mr-1" />
+            Verified
           </Badge>
         </div>
       </header>
