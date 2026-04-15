@@ -5,86 +5,31 @@ function getBaseUrl() {
   return process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || ''
 }
 
-// ---- Email sending with Resend (preferred) or SMTP fallback ----
+// ---- Email sending via Resend ----
 
-async function sendViaResend(to: string, subject: string, html: string, from?: string) {
+async function sendEmail(to: string, subject: string, html: string, text: string) {
   const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) return false
+  if (!apiKey) {
+    console.log('=== EMAIL NOT CONFIGURED (set RESEND_API_KEY) ===')
+    console.log(`To: ${to}`)
+    console.log(`Subject: ${subject}`)
+    console.log('=================================================')
+    return { method: 'console', sent: false }
+  }
 
   const { Resend } = await import('resend')
   const resend = new Resend(apiKey)
-
-  const fromEmail = from || process.env.EMAIL_FROM || 'ShipProof <noreply@shipproof.netlify.app>'
+  const fromEmail = process.env.EMAIL_FROM || 'ShipProof <noreply@shipproof.netlify.app>'
 
   await resend.emails.send({
     from: fromEmail,
     to,
     subject,
     html,
-  })
-
-  return true
-}
-
-async function sendViaSMTP(to: string, subject: string, html: string, text: string) {
-  const host = process.env.SMTP_HOST
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
-
-  if (!host || !user || !pass) return false
-
-  const nodemailer = await import('nodemailer')
-  const port = parseInt(process.env.SMTP_PORT || '587', 10)
-  const fromEmail = process.env.SMTP_FROM || user
-
-  const transporter = nodemailer.default.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  })
-
-  await transporter.sendMail({
-    from: `"ShipProof" <${fromEmail}>`,
-    to,
-    replyTo: fromEmail,
-    subject,
-    html,
     text,
   })
 
-  return true
-}
-
-// Unified send: tries Resend first, then SMTP, then falls back to console log
-async function sendEmail(to: string, subject: string, html: string, text: string) {
-  // Try Resend first
-  const resentFrom = process.env.EMAIL_FROM
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const sent = await sendViaResend(to, subject, html, resentFrom)
-      if (sent) return { method: 'resend', sent: true }
-    } catch (err) {
-      console.error('Resend failed, trying SMTP fallback:', err)
-    }
-  }
-
-  // Try SMTP
-  if (process.env.SMTP_HOST) {
-    try {
-      const sent = await sendViaSMTP(to, subject, html, text)
-      if (sent) return { method: 'smtp', sent: true }
-    } catch (err) {
-      console.error('SMTP failed:', err)
-    }
-  }
-
-  // No email provider configured — log to console
-  console.log('=== EMAIL NOT CONFIGURED ===')
-  console.log(`To: ${to}`)
-  console.log(`Subject: ${subject}`)
-  console.log('==========================')
-  return { method: 'console', sent: false, reason: 'No email provider configured' }
+  return { method: 'resend', sent: true }
 }
 
 // ---- HTML Templates ----
@@ -210,7 +155,7 @@ export async function sendSellerNotification(videoId: string, condition: string 
   const conditionLabel = condition ? conditionLabels[condition] || condition : 'No condition reported'
   const baseUrl = getBaseUrl()
 
-  const subject = `Order #${video.orderId} confirmed by buyer — ${conditionLabel}`
+  const subject = `Order #${video.orderId} confirmed by buyer - ${conditionLabel}`
   const html = sellerNotificationHtml(video.orderId, conditionLabel, comment, `${baseUrl}/dashboard`)
   const text = `Order #${video.orderId} confirmed. Condition: ${conditionLabel}${comment ? `\nBuyer said: "${comment}"` : ''}`
 

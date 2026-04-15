@@ -3,11 +3,9 @@ generator client {
 }
 
 datasource db {
-  // Turso uses libsql provider. SQLite still works for local dev.
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-  // Uncomment for Turso:
-  // directUrl = env("DIRECT_URL")  // Only needed if using connection pooling
+  provider  = "sqlite"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model Video {
