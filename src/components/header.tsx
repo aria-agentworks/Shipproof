@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Menu, X, Camera } from 'lucide-react'
+import { Menu, X, Camera, CreditCard } from 'lucide-react'
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -34,6 +34,12 @@ export default function Header() {
           <Link href="/dashboard">
             <Button variant="ghost" size="sm" className="text-emerald-100 hover:text-white hover:bg-white/10">
               Dashboard
+            </Button>
+          </Link>
+          <Link href="/pricing">
+            <Button variant="ghost" size="sm" className="text-emerald-100 hover:text-white hover:bg-white/10">
+              <CreditCard className="w-4 h-4 mr-1.5" />
+              Pricing
             </Button>
           </Link>
           <Link href="/record" className="ml-2">
@@ -66,6 +72,12 @@ export default function Header() {
           <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
             <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/10">
               Dashboard
+            </Button>
+          </Link>
+          <Link href="/pricing" onClick={() => setMenuOpen(false)}>
+            <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/10">
+              <CreditCard className="w-4 h-4 mr-2" />
+              Pricing
             </Button>
           </Link>
           <Link href="/record" onClick={() => setMenuOpen(false)} className="pt-2">

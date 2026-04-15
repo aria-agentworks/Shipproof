@@ -1,0 +1,19 @@
+{
+  "name": "ShipProof - Video Proof of Order Packing",
+  "short_name": "ShipProof",
+  "description": "Record packing videos with tamper-proof overlays. Send verification links to buyers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#059669",
+  "orientation": "portrait",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/logo.jpeg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

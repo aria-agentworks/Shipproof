@@ -16,6 +16,7 @@ import {
   Package,
   TrendingDown,
   ArrowRight,
+  CreditCard,
 } from 'lucide-react'
 
 const steps = [
@@ -140,6 +141,17 @@ export default function HomePage() {
                   <Link href="/dashboard">
                     View Dashboard
                     <ArrowRight className="w-4 h-4 ml-2" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="w-full bg-white/10 text-white border-white/30 hover:bg-white/20 hover:text-white font-semibold text-base px-8 py-3.5 rounded-xl backdrop-blur-sm transition-all"
+                >
+                  <Link href="/pricing">
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    View Pricing
                   </Link>
                 </Button>
               </div>
@@ -317,6 +329,7 @@ export default function HomePage() {
           </div>
           <div className="mt-6 pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex gap-6 text-xs">
+              <Link href="/pricing" className="hover:text-gray-300 cursor-pointer transition-colors">Pricing</Link>
               <span className="hover:text-gray-300 cursor-pointer transition-colors">Privacy</span>
               <span className="hover:text-gray-300 cursor-pointer transition-colors">Terms</span>
               <span className="hover:text-gray-300 cursor-pointer transition-colors">Support</span>

@@ -27,3 +27,19 @@ model Video {
   @@index([buyerEmail])
   @@index([status])
 }
+
+model Payment {
+  id                 String    @id @default(cuid())
+  razorpayOrderId    String    @unique
+  razorpayPaymentId  String
+  razorpaySignature  String
+  planKey            String    // free, pro, business
+  status             String    @default("completed") // pending, completed, failed
+  amount             Int
+  currency           String    @default("INR")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([planKey])
+  @@index([status])
+}
