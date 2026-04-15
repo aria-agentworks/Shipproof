@@ -1,0 +1,22 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Video {
+  id              String    @id @default(cuid())
+  orderId         String
+  buyerEmail      String
+  videoFilename   String
+  uniqueCode      String    @unique
+  status          String    @default("recorded") // recorded, sent, confirmed
+  buyerConfirmed  Boolean   @default(false)
+  buyerConfirmedAt DateTime?
+  recordedAt      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
