@@ -11,9 +11,10 @@ model Video {
   id               String    @id @default(cuid())
   orderId          String
   buyerEmail       String
-  videoFilename    String
   uniqueCode       String    @unique
   status           String    @default("recorded") // recorded, sent, confirmed
+  videoData        String?   // base64 encoded video blob (for serverless hosting like Netlify)
+  videoFilename    String?   // legacy: filesystem path (only works in non-serverless)
   buyerConfirmed   Boolean   @default(false)
   buyerConfirmedAt DateTime?
   packageCondition String?   // perfect, damaged, wrong_item, missing_parts

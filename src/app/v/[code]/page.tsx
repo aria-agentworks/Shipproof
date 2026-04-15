@@ -28,7 +28,8 @@ interface VideoData {
   id: string
   orderId: string
   buyerEmail: string
-  videoFilename: string
+  videoFilename: string | null
+  videoData: string | null
   uniqueCode: string
   status: string
   buyerConfirmed: boolean
@@ -227,7 +228,7 @@ export default function VerifyPage({ params }: { params: Promise<{ code: string 
         <Card className="overflow-hidden">
           <div className="bg-black">
             <video
-              src={`/api/video/${video.videoFilename}`}
+              src={video.videoData || `/api/video/${video.videoFilename}`}
               controls
               className="w-full"
               playsInline
