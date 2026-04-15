@@ -70,3 +70,52 @@ Stage Summary:
 - Landing page REDESIGNED: gradient hero, step-by-step how it works, feature grid, CTA, social proof, dark footer
 - Scanner flow IMPROVED: prominent scan button, better fallbacks, auto-generate order ID option
 - Consistent emerald theme across ALL pages (landing, header, record, verify, dashboard)
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Add PWA support + Razorpay multi-currency payment integration
+
+Work Log:
+- Created PWA support files:
+  - public/manifest.json: App manifest with ShipProof branding, standalone display, portrait orientation, emerald theme color
+  - public/sw.js: Service worker with stale-while-revalidate caching strategy, skips API routes and non-GET requests
+  - src/components/service-worker.tsx: Client component that registers the service worker on mount
+- Updated src/app/layout.tsx:
+  - Added PWA metadata: manifest, appleWebApp, mobile-web-app-capable
+  - Added apple-touch-icon link in head
+  - Added Razorpay checkout.js via Next.js Script component (lazyOnload strategy)
+  - Added ServiceWorkerRegistration component in body after children
+- Installed razorpay npm package (v0.15+)
+- Created src/lib/payment.ts:
+  - PLANS config: Free (₹0/$0/€0), Pro (₹499/$9.99/€9.99), Business (₹1,499/$29.99/€29.99)
+  - Multi-currency support (INR, USD, EUR) with auto-detection from browser locale
+  - createOrder() for Razorpay order creation
+  - verifyPayment() using HMAC-SHA256 signature verification
+  - formatPrice() with locale-aware formatting for INR
+- Created API routes:
+  - /api/payment/create (POST): Creates Razorpay order for paid plans
+  - /api/payment/verify (POST): Verifies payment signature and stores in DB
+  - /api/payment/status (GET): Returns recent payment records
+  - /api/usage (GET): Returns current month's video count and today's email count
+- Created pricing page at /pricing:
+  - 3 plan cards (Free/Pro/Business) with emerald, gray, purple theming
+  - Pro card highlighted as "Most Popular" with scale effect and badge
+  - Currency auto-detection from browser locale + manual switcher (INR/USD/EUR)
+  - "Start Free" button redirects to /record; paid plans open Razorpay checkout modal
+  - FAQ section with 4 common questions
+  - Mobile-first responsive design
+- Updated Prisma schema: Added Payment model with razorpayOrderId (unique), planKey, status, amount, currency
+- Created Payment table in Turso DB with all required columns and indexes
+- Ran prisma generate to update client
+- Updated header.tsx: Added Pricing nav link with CreditCard icon (desktop + mobile)
+- Updated page.tsx: Added "View Pricing" button in hero CTA section + Pricing link in footer
+- Fixed lint: Replaced require('crypto') with import crypto; replaced `any` type with proper typing for Razorpay window object
+- All changes committed and pushed to GitHub (main branch)
+
+Stage Summary:
+- PWA support FULLY IMPLEMENTED: manifest.json, service worker, SW registration component, PWA metadata in layout
+- Razorpay payment integration COMPLETE: multi-currency pricing, order creation, signature verification, payment storage
+- Pricing page LIVE at /pricing with 3 tiers, currency switcher, and Razorpay checkout integration
+- Payment model added to Prisma schema + Turso DB table created with indexes
+- Navigation updated: Pricing links in header (desktop + mobile), hero CTA, and footer
