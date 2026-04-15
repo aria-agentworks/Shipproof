@@ -8,13 +8,32 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Handle API routes and dynamic routes
+# Handle dynamic API routes
+[[redirects]]
+  from = "/api/*"
+  to = "/api/:splat"
+  status = 200
+
+# Handle verification page dynamic routes
 [[redirects]]
   from = "/v/*"
   to = "/v/:splat"
   status = 200
 
+# Handle video serving
 [[redirects]]
-  from = "/api/*"
-  to = "/api/:splat"
+  from = "/api/video/*"
+  to = "/api/video/:splat"
+  status = 200
+
+# Handle confirm endpoint
+[[redirects]]
+  from = "/api/confirm/*"
+  to = "/api/confirm/:splat"
+  status = 200
+
+# Handle verify endpoint
+[[redirects]]
+  from = "/api/verify/*"
+  to = "/api/verify/:splat"
   status = 200

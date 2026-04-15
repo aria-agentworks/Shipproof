@@ -8,15 +8,17 @@ datasource db {
 }
 
 model Video {
-  id              String    @id @default(cuid())
-  orderId         String
-  buyerEmail      String
-  videoFilename   String
-  uniqueCode      String    @unique
-  status          String    @default("recorded") // recorded, sent, confirmed
-  buyerConfirmed  Boolean   @default(false)
+  id               String    @id @default(cuid())
+  orderId          String
+  buyerEmail       String
+  videoFilename    String
+  uniqueCode       String    @unique
+  status           String    @default("recorded") // recorded, sent, confirmed
+  buyerConfirmed   Boolean   @default(false)
   buyerConfirmedAt DateTime?
-  recordedAt      DateTime  @default(now())
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  packageCondition String?   // perfect, damaged, wrong_item, missing_parts
+  buyerComment     String?
+  recordedAt       DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }

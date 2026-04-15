@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+const VALID_CONDITIONS = ['perfect', 'damaged', 'wrong_item', 'missing_parts']
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
   try {
     const { code } = await params
+    const body = await request.json()
+    const { packageCondition, buyerComment } = body || {}
+
     const video = await db.video.findUnique({
       where: { uniqueCode: code.toUpperCase() },
     })
@@ -25,12 +30,19 @@ export async function POST(
       )
     }
 
+    // Validate package condition if provided
+    const condition = packageCondition && VALID_CONDITIONS.includes(packageCondition)
+      ? packageCondition
+      : null
+
     const updated = await db.video.update({
       where: { uniqueCode: code.toUpperCase() },
       data: {
         buyerConfirmed: true,
         buyerConfirmedAt: new Date(),
         status: 'confirmed',
+        ...(condition && { packageCondition: condition }),
+        ...(buyerComment && { buyerComment: buyerComment.trim().substring(0, 500) }),
       },
     })
 

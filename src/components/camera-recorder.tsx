@@ -237,12 +237,57 @@ export default function CameraRecorder({
   }, [stopRecording, stopCamera, startCamera])
 
   useEffect(() => {
-    startCamera()
+    const initCamera = async () => {
+      try {
+        setCameraError(null)
+
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop())
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+          audio: false,
+        })
+
+        streamRef.current = stream
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          await videoRef.current.play()
+          setCameraReady(true)
+
+          videoRef.current.onloadedmetadata = () => {
+            if (canvasRef.current && videoRef.current) {
+              drawOverlay(videoRef.current, canvasRef.current, uniqueCodeRef.current)
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Camera error:', err)
+        setCameraError('Could not access camera. Please allow camera permissions and try again.')
+        setCameraReady(false)
+      }
+    }
+
+    initCamera()
+
     return () => {
-      stopCamera()
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current)
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
+        streamRef.current = null
+      }
+      setCameraReady(false)
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [facingMode])
+  }, [facingMode, drawOverlay])
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0')
