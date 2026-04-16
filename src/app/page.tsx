@@ -4,8 +4,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import Header from '@/components/header'
+import { Badge } from '@/components/ui/badge'
 import {
+  Code2,
   Shield,
   Zap,
   Globe,
@@ -13,87 +14,175 @@ import {
   Server,
   Lock,
   ArrowRight,
-  Code2,
-  CheckCircle,
   Upload,
   Eye,
+  CheckCircle,
+  Menu,
+  X,
+  Key,
+  Activity,
 } from 'lucide-react'
+import { useState } from 'react'
 
-const stats = [
-  { value: '99.99%', label: 'Uptime SLA' },
-  { value: '<100ms', label: 'API Latency' },
-  { value: 'SHA-256', label: 'Video Hashing' },
-  { value: 'SOC 2', label: 'Compliant' },
+const navLinks = [
+  { label: 'Docs', href: '/docs' },
+  { label: 'Pricing', href: '/pricing' },
+  { label: 'API Reference', href: '/docs#endpoints' },
+  { label: 'Dashboard', href: '/dashboard' },
 ]
 
-const steps = [
-  {
-    num: '01',
-    icon: Upload,
-    title: 'Upload via API',
-    description: 'Send a POST request with order ID and video data (base64 or S3 URL). Our API returns a unique verification code instantly.',
-  },
-  {
-    num: '02',
-    icon: Eye,
-    title: 'Share Verification URL',
-    description: 'Get a branded verification link for each order. Send it to your buyer automatically via email or embed it in your tracking page.',
-  },
-  {
-    num: '03',
-    icon: CheckCircle,
-    title: 'Buyer Confirms',
-    description: 'The buyer watches the packing video and confirms receipt. You get real-time webhook notifications and a complete audit trail.',
-  },
+const trustBadges = [
+  { label: '99.99% Uptime SLA', icon: Activity },
+  { label: 'SHA-256 Hashing', icon: Shield },
+  { label: 'SOC2 Compliant', icon: Lock },
+  { label: '<100ms API Latency', icon: Zap },
 ]
 
 const features = [
   {
     icon: Code2,
     title: 'API-First Architecture',
-    description: 'RESTful API with clean JSON responses. No SDK required — integrate in minutes with any language.',
+    description: 'RESTful endpoints, no SDK required. Integrate in 5 minutes with any language or framework.',
   },
   {
     icon: Shield,
     title: 'SHA-256 Video Hashing',
-    description: 'Every video is cryptographically hashed. Buyers and sellers can verify integrity at any time.',
+    description: 'Cryptographic proof that every video is authentic and untampered. Verifiable at any time.',
   },
   {
     icon: Globe,
-    title: 'White-Label',
-    description: 'Your brand, your domain, your colors. Invisible infrastructure — your customers never see ShipProof.',
+    title: 'White-Label Ready',
+    description: 'Your brand, your domain. Buyers never see ShipProof. Fully customizable experience.',
   },
   {
     icon: Webhook,
-    title: 'Webhooks',
-    description: 'Real-time event notifications for video.created and buyer.confirmed. Integrate with any system.',
+    title: 'Real-Time Webhooks',
+    description: 'Get notified instantly for every video upload and buyer confirmation. Integrate with any system.',
   },
   {
     icon: Server,
     title: 'Bulk Processing',
-    description: '100k+ videos per day via S3/R2 integration. Built for high-throughput warehouse operations.',
+    description: 'Built for scale. Accepts S3 URLs, base64, and camera streams. 100k+ videos/day.',
   },
   {
     icon: Lock,
-    title: 'SOC 2 Compliant',
-    description: 'Enterprise-grade security with encrypted storage, access controls, and audit logging.',
+    title: 'Enterprise Security',
+    description: 'SOC2 compliant infrastructure. Data encrypted at rest and in transit. Role-based access.',
+  },
+]
+
+const steps = [
+  {
+    num: '01',
+    icon: Upload,
+    title: 'Upload',
+    description: 'Your warehouse cameras or systems POST video to our API',
+  },
+  {
+    num: '02',
+    icon: Eye,
+    title: 'Stamp',
+    description: 'We hash the video (SHA-256), generate a verification code, store it',
+  },
+  {
+    num: '03',
+    icon: CheckCircle,
+    title: 'Verify',
+    description: 'Buyer opens the link, watches, confirms. You get a webhook.',
   },
 ]
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   return (
     <div className="min-h-screen flex flex-col bg-white text-gray-900">
-      <Header />
+      {/* ===== NAVBAR ===== */}
+      <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-lg">
+        <nav className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image
+              src="/logo.jpeg"
+              alt="ShipProof"
+              width={28}
+              height={28}
+              className="rounded"
+            />
+            <span className="text-lg font-bold text-gray-900 tracking-tight">ShipProof</span>
+          </Link>
+
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors rounded-md hover:bg-gray-50"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Desktop CTA */}
+          <div className="hidden md:flex items-center gap-3">
+            <Button asChild size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg shadow-sm">
+              <Link href="/docs">
+                <Key className="w-3.5 h-3.5 mr-1.5" />
+                Get API Key
+              </Link>
+            </Button>
+          </div>
+
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </nav>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-100 bg-white px-4 py-3 space-y-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="pt-2 border-t border-gray-100">
+              <Button asChild size="sm" className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg">
+                <Link href="/docs" onClick={() => setMobileMenuOpen(false)}>
+                  <Key className="w-3.5 h-3.5 mr-1.5" />
+                  Get API Key
+                </Link>
+              </Button>
+            </div>
+          </div>
+        )}
+      </header>
 
       <main className="flex-1">
         {/* ===== HERO ===== */}
         <section className="relative overflow-hidden bg-gray-950">
           {/* Grid pattern */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)',
-            backgroundSize: '48px 48px'
-          }} />
-          {/* Radial glow */}
+          <div
+            className="absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage:
+                'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)',
+              backgroundSize: '48px 48px',
+            }}
+          />
+          {/* Radial emerald glow */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(5,150,105,0.15),transparent_70%)]" />
 
           <div className="relative px-4 py-20 sm:py-28 lg:py-36">
@@ -113,8 +202,7 @@ export default function HomePage() {
 
               {/* Subtitle */}
               <p className="mt-6 text-base sm:text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-                API-first platform for packing verification. Upload videos programmatically, 
-                generate tamper-proof verification URLs, and get cryptographic proof of every shipment.
+                API-first platform to record, verify, and prove every shipment. SHA-256 hashing. White-label. 100k+ videos/day.
               </p>
 
               {/* CTA Buttons */}
@@ -125,8 +213,8 @@ export default function HomePage() {
                   className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base px-8 py-3.5 rounded-xl shadow-lg shadow-emerald-600/20 transition-all hover:shadow-xl active:scale-[0.98]"
                 >
                   <Link href="/docs">
-                    <Code2 className="w-4 h-4 mr-2" />
-                    Get Your API Key
+                    <Key className="w-4 h-4 mr-2" />
+                    Get API Key
                   </Link>
                 </Button>
                 <Button
@@ -135,51 +223,179 @@ export default function HomePage() {
                   variant="outline"
                   className="bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white font-semibold text-base px-8 py-3.5 rounded-xl backdrop-blur-sm transition-all"
                 >
-                  <Link href="/docs#endpoints">
-                    View API Reference
+                  <Link href="/docs">
+                    Read Docs
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
               </div>
+            </div>
+          </div>
 
-              {/* Code preview */}
-              <div className="mt-12 max-w-2xl mx-auto">
-                <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-gray-900/80 backdrop-blur-sm text-left">
-                  <div className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.03] border-b border-white/[0.08]">
+          {/* Bottom fade */}
+          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent" />
+        </section>
+
+        {/* ===== TRUST BAR ===== */}
+        <section className="py-12 sm:py-16 px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {trustBadges.map((badge) => {
+                const Icon = badge.icon
+                return (
+                  <div
+                    key={badge.label}
+                    className="flex items-center gap-3 p-4 rounded-xl border border-emerald-100 bg-emerald-50/50"
+                  >
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                      <Icon className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <span className="text-sm font-semibold text-gray-800">{badge.label}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== API EXAMPLE ===== */}
+        <section className="py-12 sm:py-20 px-4 bg-gray-950">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-10">
+              <p className="text-sm font-semibold text-emerald-400 uppercase tracking-widest mb-3">
+                Developer Experience
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white">Ship with one API call</h2>
+            </div>
+
+            <div className="space-y-4">
+              {/* Request */}
+              <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-gray-900 text-left">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.03] border-b border-white/[0.08]">
+                  <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
                     <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
                     <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
                     <span className="ml-2 text-[11px] font-medium uppercase tracking-wider text-gray-500">Terminal</span>
                   </div>
-                  <pre className="p-4 sm:p-5 overflow-x-auto text-[13px] leading-relaxed text-gray-300">
-                    <code>{`curl -X POST https://shipproof.netlify.app/api/v1/video \\
-  -H "X-API-Key: sp_live_..." \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "order_id": "ORD-12345",
-    "buyer_email": "buyer@email.com",
-    "video_data": "base64..."
-  }'`}</code>
-                  </pre>
+                  <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/25 text-[10px] font-bold">POST</Badge>
                 </div>
+                <pre className="p-4 sm:p-5 overflow-x-auto text-[13px] leading-relaxed">
+                  <code>
+                    <span className="text-gray-500">{'curl -X POST '}</span>
+                    <span className="text-emerald-400">{'https://shipproof.netlify.app/api/v1/video'}</span>
+                    {' \\\n'}
+                    <span className="text-gray-500">{'  -H '}</span>
+                    <span className="text-yellow-400">{'"X-API-Key: sp_live_..."'}</span>
+                    {' \\\n'}
+                    <span className="text-gray-500">{'  -H '}</span>
+                    <span className="text-yellow-400">{'"Content-Type: application/json"'}</span>
+                    {' \\\n'}
+                    <span className="text-gray-500">{'  -d '}</span>
+                    <span className="text-yellow-400">{'\''}</span>
+                    <span className="text-gray-300">{'{'}</span>
+                    {'\n'}
+                    <span className="text-gray-300">{'    '}</span>
+                    <span className="text-emerald-400">{'"order_id"'}</span>
+                    <span className="text-gray-300">{': '}</span>
+                    <span className="text-yellow-400">{'"ORD-12345"'}</span>
+                    <span className="text-gray-300">{','}</span>
+                    {'\n'}
+                    <span className="text-gray-300">{'    '}</span>
+                    <span className="text-emerald-400">{'"buyer_email"'}</span>
+                    <span className="text-gray-300">{': '}</span>
+                    <span className="text-yellow-400">{'"buyer@email.com"'}</span>
+                    <span className="text-gray-300">{','}</span>
+                    {'\n'}
+                    <span className="text-gray-300">{'    '}</span>
+                    <span className="text-emerald-400">{'"video_data"'}</span>
+                    <span className="text-gray-300">{': '}</span>
+                    <span className="text-yellow-400">{'"base64..."'}</span>
+                    {'\n'}
+                    <span className="text-gray-300">{'}'}</span>
+                    <span className="text-yellow-400">{'\''}</span>
+                  </code>
+                </pre>
+              </div>
+
+              {/* Response */}
+              <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-gray-900 text-left">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.03] border-b border-white/[0.08]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+                    <span className="ml-2 text-[11px] font-medium uppercase tracking-wider text-gray-500">Response</span>
+                  </div>
+                  <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/25 text-[10px] font-bold">200 OK</Badge>
+                </div>
+                <pre className="p-4 sm:p-5 overflow-x-auto text-[13px] leading-relaxed">
+                  <code>
+                    <span className="text-gray-300">{'{'}</span>
+                    {'\n'}
+                    <span className="text-gray-300">{'  '}</span>
+                    <span className="text-emerald-400">{'"success"'}</span>
+                    <span className="text-gray-300">{': '}</span>
+                    <span className="text-purple-400">true</span>
+                    <span className="text-gray-300">{','}</span>
+                    {'\n'}
+                    <span className="text-gray-300">{'  '}</span>
+                    <span className="text-emerald-400">{'"data"'}</span>
+                    <span className="text-gray-300">{': '}</span>
+                    <span className="text-gray-300">{'{'}</span>
+                    {'\n'}
+                    <span className="text-gray-300">{'    '}</span>
+                    <span className="text-emerald-400">{'"verification_url"'}</span>
+                    <span className="text-gray-300">{': '}</span>
+                    <span className="text-yellow-400">{'"/v/ABC12345"'}</span>
+                    <span className="text-gray-300">{','}</span>
+                    {'\n'}
+                    <span className="text-gray-300">{'    '}</span>
+                    <span className="text-emerald-400">{'"video_hash"'}</span>
+                    <span className="text-gray-300">{': '}</span>
+                    <span className="text-yellow-400">{'"sha256:a1b2c3..."'}</span>
+                    {'\n'}
+                    <span className="text-gray-300">{'  }'}</span>
+                    {'\n'}
+                    <span className="text-gray-300">{'}'}</span>
+                  </code>
+                </pre>
               </div>
             </div>
           </div>
-
-          {/* Bottom gradient fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent" />
         </section>
 
-        {/* ===== API STATS ===== */}
-        <section className="py-16 sm:py-20 px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
-              {stats.map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="text-sm text-gray-500 mt-1">{stat.label}</p>
-                </div>
-              ))}
+        {/* ===== FEATURES GRID ===== */}
+        <section className="py-16 sm:py-24 px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-14">
+              <p className="text-sm font-semibold text-emerald-600 uppercase tracking-widest mb-3">
+                Platform Features
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Built for Scale</h2>
+              <p className="mt-3 text-gray-500 max-w-lg mx-auto">
+                Every feature designed for enterprise workloads and developer experience.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {features.map((feature) => {
+                const Icon = feature.icon
+                return (
+                  <Card
+                    key={feature.title}
+                    className="border border-gray-100 hover:border-emerald-200 hover:shadow-md transition-all"
+                  >
+                    <CardContent className="p-5 sm:p-6">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-3">
+                        <Icon className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <h3 className="font-bold text-gray-900">{feature.title}</h3>
+                      <p className="mt-2 text-gray-600 text-sm leading-relaxed">{feature.description}</p>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           </div>
         </section>
@@ -188,10 +404,8 @@ export default function HomePage() {
         <section className="py-16 sm:py-24 px-4 bg-gray-50">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-14">
-              <p className="text-sm font-semibold text-emerald-600 uppercase tracking-widest">API Flow</p>
-              <h2 className="mt-3 text-2xl sm:text-3xl font-bold text-gray-900">
-                Three Steps. Zero Friction.
-              </h2>
+              <p className="text-sm font-semibold text-emerald-600 uppercase tracking-widest mb-3">API Flow</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Three Steps. Zero Friction.</h2>
               <p className="mt-3 text-gray-500 max-w-lg mx-auto">
                 Integrate once, automate forever. From upload to buyer confirmation in under a second.
               </p>
@@ -217,82 +431,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ===== FEATURES GRID ===== */}
-        <section className="py-16 sm:py-24 px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-14">
-              <p className="text-sm font-semibold text-emerald-600 uppercase tracking-widest">Platform Features</p>
-              <h2 className="mt-3 text-2xl sm:text-3xl font-bold text-gray-900">
-                Built for Scale
-              </h2>
-              <p className="mt-3 text-gray-500 max-w-lg mx-auto">
-                Every feature designed for enterprise workloads and developer experience.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {features.map((feature) => {
-                const Icon = feature.icon
-                return (
-                  <Card key={feature.title} className="border border-gray-100 hover:border-emerald-200 hover:shadow-md transition-all">
-                    <CardContent className="p-5 sm:p-6">
-                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mb-3">
-                        <Icon className="w-5 h-5 text-emerald-600" />
-                      </div>
-                      <h3 className="font-bold text-gray-900">{feature.title}</h3>
-                      <p className="mt-2 text-gray-600 text-sm leading-relaxed">{feature.description}</p>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* ===== API CODE EXAMPLE ===== */}
-        <section className="py-16 sm:py-24 px-4 bg-gray-950">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-10">
-              <p className="text-sm font-semibold text-emerald-400 uppercase tracking-widest">Developer Experience</p>
-              <h2 className="mt-3 text-2xl sm:text-3xl font-bold text-white">
-                Clean API. Any Language.
-              </h2>
-              <p className="mt-3 text-gray-400 max-w-lg mx-auto">
-                RESTful endpoints with consistent JSON responses. Works with curl, Python, Node.js, Go, or any HTTP client.
-              </p>
-            </div>
-
-            <div className="rounded-xl overflow-hidden border border-white/[0.08] bg-gray-900 text-left">
-              <div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.03] border-b border-white/[0.08]">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
-                  <span className="ml-2 text-[11px] font-medium uppercase tracking-wider text-gray-500">JavaScript</span>
-                </div>
-              </div>
-              <pre className="p-4 sm:p-6 overflow-x-auto text-[13px] leading-relaxed text-gray-300">
-                <code>{`const response = await fetch('/api/v1/video', {
-  method: 'POST',
-  headers: {
-    'X-API-Key': process.env.SHIPPROOF_API_KEY,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    order_id: 'ORD-12345',
-    buyer_email: 'buyer@email.com',
-    video_data: base64VideoString,
-  }),
-});
-
-const { data } = await response.json();
-console.log(data.verification_url);
-// → https://shipproof.netlify.app/v/ABC12345`}</code>
-              </pre>
-            </div>
-          </div>
-        </section>
-
         {/* ===== CTA ===== */}
         <section className="py-16 sm:py-24 px-4">
           <div className="max-w-3xl mx-auto">
@@ -302,11 +440,9 @@ console.log(data.verification_url);
 
               <div className="relative">
                 <Zap className="w-12 h-12 text-emerald-200 mx-auto mb-4" />
-                <h2 className="text-2xl sm:text-3xl font-bold text-white">
-                  Start Building Today
-                </h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white">Ready to Ship with Proof?</h2>
                 <p className="mt-3 text-emerald-100/80 max-w-md mx-auto">
-                  Get your API key in seconds. 50 free videos per month. No credit card required.
+                  Get your free API key in seconds. 50 free videos/month. No credit card required.
                 </p>
                 <Button
                   asChild
@@ -314,7 +450,7 @@ console.log(data.verification_url);
                   className="mt-8 bg-white text-emerald-700 hover:bg-emerald-50 font-bold text-base px-10 py-4 rounded-xl shadow-lg transition-all hover:shadow-xl active:scale-[0.98]"
                 >
                   <Link href="/docs">
-                    Get Your API Key
+                    Get Your Free API Key
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
@@ -326,34 +462,32 @@ console.log(data.verification_url);
 
       {/* ===== FOOTER ===== */}
       <footer className="bg-gray-950 text-gray-400">
-        <div className="max-w-4xl mx-auto px-4 py-10">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
               <Image
                 src="/logo.jpeg"
-                alt="ShipProof logo"
+                alt="ShipProof"
                 width={28}
-                height={50}
-                className="h-7 w-auto rounded opacity-60"
+                height={28}
+                className="rounded opacity-60"
               />
-              <span className="text-sm font-semibold text-gray-300">ShipProof</span>
+              <div>
+                <span className="text-sm font-semibold text-gray-300">ShipProof</span>
+                <p className="text-xs text-gray-500 mt-0.5">Video proof infrastructure for modern commerce.</p>
+              </div>
             </div>
-            <p className="text-xs text-gray-500">
-              Video proof infrastructure for enterprise.
-            </p>
           </div>
           <div className="mt-6 pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex gap-6 text-xs">
-              <Link href="/docs" className="hover:text-gray-300 cursor-pointer transition-colors">Docs</Link>
-              <Link href="/docs#endpoints" className="hover:text-gray-300 cursor-pointer transition-colors">API Reference</Link>
-              <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">Status</a>
-              <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">Privacy</a>
-              <a href="#" className="hover:text-gray-300 cursor-pointer transition-colors">Terms</a>
-              <Link href="/pricing" className="hover:text-gray-300 cursor-pointer transition-colors">Pricing</Link>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
+              <Link href="/docs" className="hover:text-gray-300 transition-colors">Docs</Link>
+              <Link href="/docs#endpoints" className="hover:text-gray-300 transition-colors">API Reference</Link>
+              <Link href="/pricing" className="hover:text-gray-300 transition-colors">Pricing</Link>
+              <a href="#" className="hover:text-gray-300 transition-colors">Status</a>
+              <a href="#" className="hover:text-gray-300 transition-colors">Privacy</a>
+              <a href="#" className="hover:text-gray-300 transition-colors">Terms</a>
             </div>
-            <p className="text-xs text-gray-600">
-              &copy; {new Date().getFullYear()} ShipProof. All rights reserved.
-            </p>
+            <p className="text-xs text-gray-600">&copy; {new Date().getFullYear()} ShipProof. All rights reserved.</p>
           </div>
         </div>
       </footer>
