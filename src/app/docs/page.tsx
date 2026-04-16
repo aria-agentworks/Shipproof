@@ -9,12 +9,14 @@ import {
   BarChart3,
   AlertTriangle,
   Copy,
-  ChevronRight,
   ArrowRight,
   Terminal,
   Check,
   Menu,
   X,
+  Webhook,
+  Zap,
+  Loader2,
 } from 'lucide-react'
 
 /* ------------------------------------------------------------------ */
@@ -32,13 +34,19 @@ interface NavItem {
 /* ------------------------------------------------------------------ */
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'overview', label: 'Overview', icon: BookOpen },
+  { id: 'getting-started', label: 'Getting Started', icon: Zap },
   { id: 'authentication', label: 'Authentication', icon: Key },
-  { id: 'register-seller', label: 'Register Seller', icon: ArrowRight },
+  { id: 'endpoints', label: 'Endpoints', icon: Terminal },
   { id: 'upload-video', label: 'Upload Video', icon: Upload },
-  { id: 'video-status', label: 'Video Status', icon: BarChart3 },
-  { id: 'usage-stats', label: 'Usage Stats', icon: BarChart3 },
+  { id: 'list-videos', label: 'List Videos', icon: BarChart3 },
+  { id: 'get-video', label: 'Get Video', icon: BarChart3 },
+  { id: 'verify-code', label: 'Verify Code', icon: Check },
+  { id: 'confirm-receipt', label: 'Confirm Receipt', icon: Check },
+  { id: 'seller-profile', label: 'Seller Profile', icon: BookOpen },
+  { id: 'webhooks', label: 'Webhooks', icon: Webhook },
+  { id: 'rate-limits', label: 'Rate Limits', icon: Zap },
   { id: 'error-codes', label: 'Error Codes', icon: AlertTriangle },
+  { id: 'code-examples', label: 'Code Examples', icon: Terminal },
 ]
 
 /* ------------------------------------------------------------------ */
@@ -62,7 +70,6 @@ function CodeBlock({
 
   return (
     <div className="relative group rounded-lg overflow-hidden border border-white/[0.08] bg-gray-900">
-      {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.03] border-b border-white/[0.08]">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
@@ -87,7 +94,6 @@ function CodeBlock({
           <span className="text-[11px]">{copied ? 'Copied' : 'Copy'}</span>
         </button>
       </div>
-      {/* Code */}
       <pre className="p-4 sm:p-5 overflow-x-auto text-[13px] leading-relaxed text-gray-300">
         <code>{code}</code>
       </pre>
@@ -103,7 +109,7 @@ function MethodBadge({ method }: { method: string }) {
   const map: Record<string, string> = {
     POST: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
     GET: 'bg-blue-500/15 text-blue-400 border border-blue-500/25',
-    PUT: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
+    PATCH: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
     DELETE: 'bg-red-500/15 text-red-400 border border-red-500/25',
   }
   return (
@@ -160,18 +166,10 @@ function ParamTable({ params }: { params: Param[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-white/[0.04] border-b border-white/[0.08]">
-            <th className="text-left font-semibold text-gray-300 px-4 py-3">
-              Field
-            </th>
-            <th className="text-left font-semibold text-gray-300 px-4 py-3">
-              Type
-            </th>
-            <th className="text-left font-semibold text-gray-300 px-4 py-3 w-20">
-              Required
-            </th>
-            <th className="text-left font-semibold text-gray-300 px-4 py-3">
-              Description
-            </th>
+            <th className="text-left font-semibold text-gray-300 px-4 py-3">Field</th>
+            <th className="text-left font-semibold text-gray-300 px-4 py-3">Type</th>
+            <th className="text-left font-semibold text-gray-300 px-4 py-3 w-20">Required</th>
+            <th className="text-left font-semibold text-gray-300 px-4 py-3">Description</th>
           </tr>
         </thead>
         <tbody>
@@ -195,9 +193,7 @@ function ParamTable({ params }: { params: Param[] }) {
                   <span className="text-[11px] font-medium text-gray-500">optional</span>
                 )}
               </td>
-              <td className="px-4 py-2.5 text-gray-400 text-xs leading-relaxed">
-                {p.description}
-              </td>
+              <td className="px-4 py-2.5 text-gray-400 text-xs leading-relaxed">{p.description}</td>
             </tr>
           ))}
         </tbody>
@@ -205,10 +201,6 @@ function ParamTable({ params }: { params: Param[] }) {
     </div>
   )
 }
-
-/* ------------------------------------------------------------------ */
-/*  Helper: Sub-heading                                                */
-/* ------------------------------------------------------------------ */
 
 function SubHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -219,14 +211,131 @@ function SubHeading({ children }: { children: React.ReactNode }) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  API Key Generator Widget                                           */
+/* ------------------------------------------------------------------ */
+
+function ApiKeyGenerator() {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<{ api_key: string } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  const handleGenerate = async () => {
+    if (!name || !email) return
+    setLoading(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const res = await fetch('/api/v1/seller/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, company_name: name }),
+      })
+      const data = await res.json()
+
+      if (res.ok && data.data?.api_key) {
+        setResult(data.data)
+      } else {
+        setError(data.error || 'Failed to generate API key')
+      }
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCopyKey = () => {
+    if (result?.api_key) {
+      navigator.clipboard.writeText(result.api_key)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5 sm:p-6">
+      <h3 className="text-base font-bold text-white mb-1">Get Your API Key Instantly</h3>
+      <p className="text-sm text-gray-400 mb-5">Enter your name and email to receive a free API key (50 videos/month).</p>
+
+      {result ? (
+        <div className="space-y-4">
+          <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+            <p className="text-xs text-emerald-400 font-semibold mb-2">Your API Key</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-sm text-emerald-300 font-mono break-all">{result.api_key}</code>
+              <button
+                onClick={handleCopyKey}
+                className="flex-shrink-0 p-2 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 transition-colors"
+                aria-label="Copy API key"
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Copy className="w-4 h-4 text-emerald-400" />
+                )}
+              </button>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500">
+            Save this key now. It cannot be retrieved again. Use it with the <code className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">X-API-Key</code> header.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input
+              type="text"
+              placeholder="Your name or company"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2.5 text-sm rounded-lg bg-gray-900 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-transparent transition-colors"
+            />
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2.5 text-sm rounded-lg bg-gray-900 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-transparent transition-colors"
+            />
+          </div>
+          {error && (
+            <p className="text-xs text-red-400">{error}</p>
+          )}
+          <button
+            onClick={handleGenerate}
+            disabled={loading || !name || !email}
+            className="w-full px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Key className="w-4 h-4" />
+                Generate API Key
+              </>
+            )}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main Page                                                          */
 /* ------------------------------------------------------------------ */
 
 export default function DocsPage() {
-  const [activeSection, setActiveSection] = useState('overview')
+  const [activeSection, setActiveSection] = useState('getting-started')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  /* Track active section on scroll */
   useEffect(() => {
     const ids = NAV_ITEMS.map((n) => n.id)
     const observer = new IntersectionObserver(
@@ -254,23 +363,17 @@ export default function DocsPage() {
 
   const sidebarContent = (
     <>
-      {/* Brand */}
       <div className="px-5 pt-6 pb-4 border-b border-white/[0.06]">
         <div className="flex items-center justify-between">
-          <span className="text-base font-bold text-white tracking-tight">
-            ShipProof API
-          </span>
+          <span className="text-base font-bold text-white tracking-tight">ShipProof API</span>
           <span className="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
             v1.0.0
           </span>
         </div>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-3">
-        <p className="px-3 mb-2 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
-          Navigation
-        </p>
+        <p className="px-3 mb-2 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">Navigation</p>
         <ul className="space-y-0.5">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon
@@ -294,10 +397,9 @@ export default function DocsPage() {
         </ul>
       </nav>
 
-      {/* CTA */}
       <div className="p-4 border-t border-white/[0.06]">
         <Link
-          href="/dashboard"
+          href="/"
           className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition-colors"
         >
           <Key className="w-4 h-4" />
@@ -309,7 +411,7 @@ export default function DocsPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-300">
-      {/* ---- Mobile header bar ---- */}
+      {/* Mobile header */}
       <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-gray-950/95 backdrop-blur border-b border-white/[0.06]">
         <button
           onClick={() => setSidebarOpen(true)}
@@ -324,7 +426,7 @@ export default function DocsPage() {
         </span>
       </div>
 
-      {/* ---- Sidebar overlay (mobile) ---- */}
+      {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
           className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
@@ -334,7 +436,6 @@ export default function DocsPage() {
             className="absolute left-0 top-0 bottom-0 w-[250px] bg-gray-900 border-r border-white/[0.06] flex flex-col shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
               <span className="text-sm font-semibold text-white">Menu</span>
               <button
@@ -350,353 +451,207 @@ export default function DocsPage() {
         </div>
       )}
 
-      {/* ---- Layout ---- */}
+      {/* Layout */}
       <div className="flex min-h-screen">
-        {/* Desktop sidebar */}
         <aside className="hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-[250px] bg-gray-900 border-r border-white/[0.06] z-30">
           {sidebarContent}
         </aside>
 
-        {/* Main content */}
         <main className="flex-1 lg:ml-[250px]">
           <div className="max-w-3xl mx-auto px-5 sm:px-10 py-10 lg:py-14">
-            {/* =============================================== */}
-            {/*  1. OVERVIEW                                     */}
-            {/* =============================================== */}
+            {/* ===== GETTING STARTED ===== */}
             <Section
-              id="overview"
-              title="Overview"
-              description="ShipProof provides a RESTful API for programmatic video proof creation, storage, and verification. Every video is hashed with SHA-256 for tamper-proof verification."
+              id="getting-started"
+              title="Getting Started"
+              description="ShipProof provides a RESTful API for programmatic video proof creation, storage, and verification. Get your API key and start integrating in minutes."
             >
-              {/* Base URL callout */}
-              <div className="flex items-center gap-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] mb-6">
+              <ApiKeyGenerator />
+
+              <div className="mt-6 flex items-center gap-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06]">
                 <Terminal className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-500 mb-0.5">Base URL</p>
-                  <code className="text-sm font-mono text-emerald-400">
-                    https://shipproof.netlify.app/api/v1
-                  </code>
+                  <code className="text-sm font-mono text-emerald-400">https://shipproof.netlify.app/api/v1</code>
                 </div>
               </div>
 
-              <p className="text-sm text-gray-400 leading-relaxed mb-3">
-                All API responses are returned as JSON. A successful request follows this format:
-              </p>
-              <CodeBlock
-                language="json"
-                code={`{
+              <p className="text-sm text-gray-400 leading-relaxed mt-4 mb-3">All API responses follow this format:</p>
+              <CodeBlock language="json" code={`{
   "success": true,
   "data": { ... }
-}`}
-              />
+}`} />
 
-              <p className="text-sm text-gray-400 leading-relaxed mt-4 mb-3">
-                Errors use a similar structure:
-              </p>
-              <CodeBlock
-                language="json"
-                code={`{
+              <p className="text-sm text-gray-400 leading-relaxed mt-4 mb-3">Errors use a similar structure:</p>
+              <CodeBlock language="json" code={`{
   "success": false,
   "error": "Human-readable error message"
-}`}
-              />
-
-              <div className="mt-6 p-4 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04]">
-                <p className="text-sm text-emerald-300 font-medium mb-1">Quick start</p>
-                <ol className="text-sm text-gray-400 list-decimal list-inside space-y-1">
-                  <li>Register a seller account to receive your API key</li>
-                  <li>Upload a video with an order ID and optional buyer email</li>
-                  <li>Share the verification URL with the buyer</li>
-                  <li>Check status or retrieve usage statistics at any time</li>
-                </ol>
-              </div>
+}`} />
             </Section>
 
-            {/* =============================================== */}
-            {/*  2. AUTHENTICATION                               */}
-            {/* =============================================== */}
+            {/* ===== AUTHENTICATION ===== */}
             <Section
               id="authentication"
               title="Authentication"
-              description="All endpoints except /seller/register require a valid API key. Pass your key using one of the two methods below."
+              description="All endpoints except /seller/register require a valid API key."
             >
               <SubHeading>Method 1: X-API-Key Header</SubHeading>
-              <CodeBlock
-                language="http"
-                code={`X-API-Key: sp_live_abc123def456...`}
-              />
+              <CodeBlock language="http" code={`X-API-Key: sp_live_abc123def456...`} />
 
               <SubHeading>Method 2: Authorization Bearer Header</SubHeading>
-              <CodeBlock
-                language="http"
-                code={`Authorization: Bearer sp_live_abc123def456...`}
-              />
-
-              <SubHeading>Example Request</SubHeading>
-              <CodeBlock
-                language="bash"
-                code={`curl https://shipproof.netlify.app/api/v1/video/ABC12345 \\
-  -H "Authorization: Bearer sp_live_abc123def456..."`}
-              />
+              <CodeBlock language="http" code={`Authorization: Bearer sp_live_abc123def456...`} />
 
               <div className="mt-6 p-4 rounded-lg border border-amber-500/15 bg-amber-500/[0.04]">
                 <p className="text-sm text-amber-300">
-                  <strong>Security warning:</strong> Never expose your API key in client-side
-                  JavaScript or public repositories. Keys prefixed with{' '}
-                  <code className="bg-amber-500/10 px-1.5 py-0.5 rounded text-xs">
-                    sp_live_
-                  </code>{' '}
-                  have full production access.
+                  <strong>Security warning:</strong> Never expose your API key in client-side JavaScript or public repositories.
                 </p>
               </div>
             </Section>
 
-            {/* =============================================== */}
-            {/*  3. REGISTER SELLER                              */}
-            {/* =============================================== */}
-            <Section id="register-seller" title="Register Seller">
-              {/* Endpoint heading */}
-              <div className="flex items-center gap-2 mb-4">
-                <MethodBadge method="POST" />
-                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">
-                  /api/v1/seller/register
-                </code>
-              </div>
-
-              <p className="text-sm text-gray-400 leading-relaxed mb-6">
-                Create a new seller account and receive your API key. If an account with the
-                provided email already exists, the existing credentials are returned.
-              </p>
-
-              <SubHeading>Request Body</SubHeading>
-              <ParamTable
-                params={[
-                  {
-                    name: 'name',
-                    type: 'string',
-                    required: true,
-                    description: 'Your company or personal name',
-                  },
-                  {
-                    name: 'email',
-                    type: 'string',
-                    required: true,
-                    description: 'Valid email address for the account',
-                  },
-                  {
-                    name: 'webhook_url',
-                    type: 'string',
-                    required: false,
-                    description: 'URL to receive event notifications (optional)',
-                  },
-                ]}
-              />
-
-              <SubHeading>Example</SubHeading>
-              <CodeBlock
-                language="bash"
-                code={`curl -X POST https://shipproof.netlify.app/api/v1/seller/register \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "Acme Corp",
-    "email": "ops@acme.com",
-    "webhook_url": "https://acme.com/api/shipproof-webhook"
-  }'`}
-              />
-
-              <SubHeading>Response (201 Created)</SubHeading>
-              <CodeBlock
-                language="json"
-                code={`{
-  "success": true,
-  "data": {
-    "id": "clx_8f14e45f",
-    "name": "Acme Corp",
-    "email": "ops@acme.com",
-    "api_key": "sp_live_a1b2c3d4e5f6g7h8i9j0",
-    "plan": "free",
-    "created_at": "2024-01-15T10:30:00Z"
-  }
-}`}
-              />
-
-              <div className="mt-6 p-4 rounded-lg border border-amber-500/15 bg-amber-500/[0.04]">
-                <p className="text-sm text-amber-300">
-                  <strong>Note:</strong> Save your API key immediately after registration. It
-                  cannot be retrieved again. If you lose it, contact support to request a new
-                  key.
-                </p>
+            {/* ===== ENDPOINTS OVERVIEW ===== */}
+            <Section id="endpoints" title="Endpoints" description="Complete list of available API endpoints.">
+              <div className="rounded-lg border border-white/[0.08] overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-white/[0.04] border-b border-white/[0.08]">
+                      <th className="text-left font-semibold text-gray-300 px-4 py-3">Method</th>
+                      <th className="text-left font-semibold text-gray-300 px-4 py-3">Endpoint</th>
+                      <th className="text-left font-semibold text-gray-300 px-4 py-3">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { method: 'POST', endpoint: '/api/v1/seller/register', desc: 'Register a new seller account', auth: false },
+                      { method: 'POST', endpoint: '/api/v1/video', desc: 'Upload a new video', auth: true },
+                      { method: 'GET', endpoint: '/api/v1/video', desc: 'List videos for seller', auth: true },
+                      { method: 'GET', endpoint: '/api/v1/video/:id', desc: 'Get video details', auth: true },
+                      { method: 'GET', endpoint: '/api/v1/verify/:code', desc: 'Verify a video (public)', auth: false },
+                      { method: 'POST', endpoint: '/api/v1/verify/:code', desc: 'Confirm receipt (public)', auth: false },
+                      { method: 'GET', endpoint: '/api/v1/seller', desc: 'Get seller profile', auth: true },
+                      { method: 'PATCH', endpoint: '/api/v1/seller', desc: 'Update seller settings', auth: true },
+                      { method: 'POST', endpoint: '/api/v1/seller', desc: 'Regenerate API key', auth: true },
+                    ].map((row) => (
+                      <tr key={row.endpoint + row.method} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]">
+                        <td className="px-4 py-2.5">
+                          <MethodBadge method={row.method} />
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <code className="text-xs text-gray-300 font-mono">{row.endpoint}</code>
+                          {row.auth && (
+                            <span className="ml-2 text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">auth</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 text-gray-400 text-xs">{row.desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </Section>
 
-            {/* =============================================== */}
-            {/*  4. UPLOAD VIDEO                                 */}
-            {/* =============================================== */}
+            {/* ===== UPLOAD VIDEO ===== */}
             <Section id="upload-video" title="Upload Video">
               <div className="flex items-center gap-2 mb-4">
                 <MethodBadge method="POST" />
-                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">
-                  /api/v1/video
-                </code>
+                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">/api/v1/video</code>
               </div>
-
               <p className="text-sm text-gray-400 leading-relaxed mb-6">
-                Upload a packing or fulfillment video associated with an order. The video is
-                hashed with SHA-256 for tamper-proof verification. You can provide the video as
-                a base64-encoded string or as an external URL (e.g. S3). Optionally, an
-                email notification with a verification link is sent to the buyer.
+                Upload a packing or fulfillment video associated with an order. The video is hashed with SHA-256 for tamper-proof verification.
               </p>
-
               <SubHeading>Request Body</SubHeading>
               <ParamTable
                 params={[
-                  {
-                    name: 'order_id',
-                    type: 'string',
-                    required: true,
-                    description: 'Your internal order identifier',
-                  },
-                  {
-                    name: 'buyer_email',
-                    type: 'string',
-                    required: false,
-                    description:
-                      'Email address of the buyer; a verification link will be sent automatically',
-                  },
-                  {
-                    name: 'video_url',
-                    type: 'string',
-                    required: false,
-                    description:
-                      'Public URL to the video file (e.g. S3, GCS). Alternative to video_data.',
-                  },
-                  {
-                    name: 'video_data',
-                    type: 'string',
-                    required: false,
-                    description:
-                      'Base64-encoded video file content. Alternative to video_url.',
-                  },
-                  {
-                    name: 'video_hash',
-                    type: 'string',
-                    required: false,
-                    description:
-                      'Pre-computed SHA-256 hash of the video. Auto-computed if omitted.',
-                  },
-                  {
-                    name: 'send_email',
-                    type: 'boolean',
-                    required: false,
-                    description:
-                      'Whether to send a verification email to the buyer (default: true)',
-                  },
+                  { name: 'order_id', type: 'string', required: true, description: 'Your internal order identifier' },
+                  { name: 'buyer_email', type: 'string', required: false, description: 'Buyer email; verification link sent automatically if video_data provided' },
+                  { name: 'video_data', type: 'string', required: false, description: 'Base64-encoded video file content' },
+                  { name: 'video_url', type: 'string', required: false, description: 'Public URL to the video file (e.g., S3). Alternative to video_data.' },
+                  { name: 'metadata', type: 'object', required: false, description: 'Optional metadata: { duration, file_size, warehouse_id, packer_id }' },
                 ]}
               />
-
-              <p className="text-xs text-gray-500 mb-5">
-                Provide either <code className="text-gray-400">video_data</code> (base64) or{' '}
-                <code className="text-gray-400">video_url</code> (external link). If both are
-                omitted the request will fail.
-              </p>
-
-              <SubHeading>cURL Example (S3 URL)</SubHeading>
+              <SubHeading>Example</SubHeading>
               <CodeBlock
                 language="bash"
                 code={`curl -X POST https://shipproof.netlify.app/api/v1/video \\
-  -H "Authorization: Bearer sp_live_a1b2c3d4e5f6g7h8i9j0" \\
+  -H "X-API-Key: sp_live_..." \\
   -H "Content-Type: application/json" \\
   -d '{
-    "order_id": "ORD-2024-78901",
-    "buyer_email": "customer@example.com",
-    "video_url": "https://s3.amazonaws.com/my-bucket/packing-vid.mp4",
-    "send_email": true
+    "order_id": "ORD-12345",
+    "buyer_email": "buyer@email.com",
+    "video_data": "base64..."
   }'`}
               />
-
-              <SubHeading>Python Example</SubHeading>
-              <CodeBlock
-                language="python"
-                code={`import requests
-
-API_KEY = "sp_live_a1b2c3d4e5f6g7h8i9j0"
-BASE_URL = "https://shipproof.netlify.app/api/v1"
-
-response = requests.post(
-    f"{BASE_URL}/video",
-    headers={
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json",
-    },
-    json={
-        "order_id": "ORD-2024-78901",
-        "buyer_email": "customer@example.com",
-        "video_url": "https://s3.amazonaws.com/my-bucket/packing-vid.mp4",
-        "send_email": True,
-    },
-)
-
-print(response.status_code)
-print(response.json())`}
-              />
-
               <SubHeading>Response (201 Created)</SubHeading>
               <CodeBlock
                 language="json"
                 code={`{
   "success": true,
   "data": {
-    "video_id": "clx_9e2b7f1c",
-    "unique_code": "ABC12345",
+    "id": "clx_9e2b7f1c",
+    "order_id": "ORD-12345",
+    "verification_code": "ABC12345",
     "verification_url": "https://shipproof.netlify.app/v/ABC12345",
-    "order_id": "ORD-2024-78901",
-    "buyer_email": "customer@example.com",
-    "video_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "status": "recorded",
+    "video_hash": "sha256:e3b0c44...",
+    "storage_provider": "base64",
     "email_sent": true,
-    "created_at": "2024-01-15T10:30:00Z"
+    "created_at": "2024-01-15T10:30:00.000Z"
   }
 }`}
               />
             </Section>
 
-            {/* =============================================== */}
-            {/*  5. VIDEO STATUS                                 */}
-            {/* =============================================== */}
-            <Section id="video-status" title="Video Status">
+            {/* ===== LIST VIDEOS ===== */}
+            <Section id="list-videos" title="List Videos">
               <div className="flex items-center gap-2 mb-4">
                 <MethodBadge method="GET" />
-                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">
-                  /api/v1/video/:code
-                </code>
+                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">/api/v1/video</code>
               </div>
-
               <p className="text-sm text-gray-400 leading-relaxed mb-6">
-                Retrieve the current status and verification details for a video by its unique
-                code. Returns buyer confirmation state, package condition, timestamps, and the
-                tamper-proof SHA-256 hash.
+                List all videos for the authenticated seller. Supports pagination and status filtering.
               </p>
-
-              <SubHeading>Path Parameters</SubHeading>
+              <SubHeading>Query Parameters</SubHeading>
               <ParamTable
                 params={[
-                  {
-                    name: 'code',
-                    type: 'string',
-                    required: true,
-                    description:
-                      'The unique verification code returned when the video was uploaded (e.g. ABC12345)',
-                  },
+                  { name: 'limit', type: 'integer', required: false, description: 'Max results per page (default: 50, max: 100)' },
+                  { name: 'offset', type: 'integer', required: false, description: 'Offset for pagination (default: 0)' },
+                  { name: 'status', type: 'string', required: false, description: 'Filter by status: recorded, sent, confirmed' },
                 ]}
               />
+              <SubHeading>Response (200 OK)</SubHeading>
+              <CodeBlock
+                language="json"
+                code={`{
+  "success": true,
+  "data": {
+    "videos": [
+      {
+        "id": "clx_9e2b7f1c",
+        "order_id": "ORD-12345",
+        "verification_code": "ABC12345",
+        "status": "confirmed",
+        "buyer_confirmed": true,
+        "created_at": "2024-01-15T10:30:00.000Z"
+      }
+    ],
+    "pagination": { "total": 142, "limit": 50, "offset": 0 }
+  }
+}`}
+              />
+            </Section>
 
+            {/* ===== GET VIDEO ===== */}
+            <Section id="get-video" title="Get Video Details">
+              <div className="flex items-center gap-2 mb-4">
+                <MethodBadge method="GET" />
+                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">/api/v1/video/:id</code>
+              </div>
+              <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                Get detailed information about a specific video including confirmation status and video hash.
+              </p>
               <SubHeading>Example</SubHeading>
               <CodeBlock
                 language="bash"
-                code={`curl https://shipproof.netlify.app/api/v1/video/ABC12345 \\
-  -H "Authorization: Bearer sp_live_a1b2c3d4e5f6g7h8i9j0"`}
+                code={`curl https://shipproof.netlify.app/api/v1/video/clx_9e2b7f1c \\
+  -H "X-API-Key: sp_live_..."`}
               />
-
               <SubHeading>Response (200 OK)</SubHeading>
               <CodeBlock
                 language="json"
@@ -704,221 +659,295 @@ print(response.json())`}
   "success": true,
   "data": {
     "id": "clx_9e2b7f1c",
-    "order_id": "ORD-2024-78901",
-    "buyer_email": "customer@example.com",
-    "unique_code": "ABC12345",
+    "order_id": "ORD-12345",
+    "verification_code": "ABC12345",
     "status": "confirmed",
-    "verification_url": "https://shipproof.netlify.app/v/ABC12345",
-    "video_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "buyer_confirmed": true,
-    "buyer_confirmed_at": "2024-01-16T14:20:00Z",
     "package_condition": "perfect",
-    "buyer_comment": "Arrived in great condition",
-    "created_at": "2024-01-15T10:30:00Z"
+    "video_hash": "sha256:e3b0c44...",
+    "verification_url": "https://shipproof.netlify.app/v/ABC12345"
   }
 }`}
               />
-
-              <div className="mt-6 p-4 rounded-lg border border-white/[0.06] bg-white/[0.02]">
-                <p className="text-sm text-gray-400">
-                  <strong className="text-gray-300">Status values:</strong>{' '}
-                  <code className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs">
-                    recorded
-                  </code>{' '}
-                  &mdash; video uploaded &bull;{' '}
-                  <code className="text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded text-xs">
-                    sent
-                  </code>{' '}
-                  &mdash; email delivered &bull;{' '}
-                  <code className="text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded text-xs">
-                    viewed
-                  </code>{' '}
-                  &mdash; buyer opened link &bull;{' '}
-                  <code className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs">
-                    confirmed
-                  </code>{' '}
-                  &mdash; buyer confirmed receipt
-                </p>
-              </div>
             </Section>
 
-            {/* =============================================== */}
-            {/*  6. USAGE STATS                                  */}
-            {/* =============================================== */}
-            <Section id="usage-stats" title="Usage Stats">
+            {/* ===== VERIFY CODE ===== */}
+            <Section id="verify-code" title="Verify Code">
               <div className="flex items-center gap-2 mb-4">
                 <MethodBadge method="GET" />
-                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">
-                  /api/v1/seller/:id/usage
-                </code>
+                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">/api/v1/verify/:code</code>
               </div>
-
               <p className="text-sm text-gray-400 leading-relaxed mb-6">
-                Retrieve usage statistics for a seller account. Returns the number of videos
-                uploaded this month, total uploads, confirmed videos, and current plan.
+                Public endpoint to verify a video by its unique code. Returns video status, hash, and seller branding. No authentication required.
               </p>
+              <SubHeading>Response (200 OK)</SubHeading>
+              <CodeBlock
+                language="json"
+                code={`{
+  "valid": true,
+  "data": {
+    "order_id": "ORD-12345",
+    "verification_code": "ABC12345",
+    "status": "recorded",
+    "video_hash": "sha256:e3b0c44...",
+    "has_video": true,
+    "buyer_confirmed": false,
+    "branding": {
+      "brandName": "Acme Corp",
+      "brandColor": "#059669",
+      "brandLogo": "https://...",
+      "customDomain": "verify.acme.com"
+    }
+  }
+}`}
+              />
+            </Section>
 
-              <SubHeading>Path Parameters</SubHeading>
+            {/* ===== CONFIRM RECEIPT ===== */}
+            <Section id="confirm-receipt" title="Confirm Receipt">
+              <div className="flex items-center gap-2 mb-4">
+                <MethodBadge method="POST" />
+                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">/api/v1/verify/:code</code>
+              </div>
+              <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                Buyer-facing endpoint to confirm package receipt. Fires webhooks and sends seller notification.
+              </p>
+              <SubHeading>Request Body</SubHeading>
               <ParamTable
                 params={[
-                  {
-                    name: 'id',
-                    type: 'string',
-                    required: true,
-                    description:
-                      'The seller ID returned during registration (e.g. clx_8f14e45f)',
-                  },
+                  { name: 'package_condition', type: 'string', required: false, description: 'One of: perfect, damaged, wrong_item, missing_parts' },
+                  { name: 'buyer_comment', type: 'string', required: false, description: 'Optional comment (max 500 chars)' },
                 ]}
               />
-
               <SubHeading>Example</SubHeading>
               <CodeBlock
                 language="bash"
-                code={`curl https://shipproof.netlify.app/api/v1/seller/clx_8f14e45f/usage \\
-  -H "Authorization: Bearer sp_live_a1b2c3d4e5f6g7h8i9j0"`}
+                code={`curl -X POST https://shipproof.netlify.app/api/v1/verify/ABC12345 \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "package_condition": "perfect",
+    "buyer_comment": "Great packaging!"
+  }'`}
               />
-
               <SubHeading>Response (200 OK)</SubHeading>
               <CodeBlock
                 language="json"
                 code={`{
   "success": true,
   "data": {
-    "seller_id": "clx_8f14e45f",
-    "plan": "business",
-    "videos_this_month": 142,
-    "total_videos": 3847,
-    "confirmed_videos": 3201,
-    "disputed_videos": 23,
-    "month": "2024-01"
+    "confirmed": true,
+    "confirmation_id": "clx_9e2b7f1c",
+    "confirmed_at": "2024-01-16T14:20:00.000Z"
   }
 }`}
               />
             </Section>
 
-            {/* =============================================== */}
-            {/*  7. ERROR CODES                                  */}
-            {/* =============================================== */}
-            <Section
-              id="error-codes"
-              title="Error Codes"
-              description="All errors return a consistent JSON structure. The HTTP status code indicates the category of the error."
-            >
+            {/* ===== SELLER PROFILE ===== */}
+            <Section id="seller-profile" title="Seller Profile">
+              <div className="flex items-center gap-2 mb-4">
+                <MethodBadge method="GET" />
+                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">/api/v1/seller</code>
+              </div>
+              <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                Get the authenticated seller's profile including brand settings, quota, and usage.
+              </p>
+
+              <SubHeading>Update Settings (PATCH)</SubHeading>
+              <CodeBlock
+                language="bash"
+                code={`curl -X PATCH https://shipproof.netlify.app/api/v1/seller \\
+  -H "X-API-Key: sp_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "brand_name": "Acme Corp",
+    "brand_color": "#2563eb",
+    "webhook_url": "https://acme.com/webhook"
+  }'`}
+              />
+
+              <SubHeading>Regenerate API Key (POST)</SubHeading>
+              <CodeBlock
+                language="bash"
+                code={`curl -X POST https://shipproof.netlify.app/api/v1/seller \\
+  -H "X-API-Key: sp_live_..."`}
+              />
+              <div className="mt-4 p-4 rounded-lg border border-amber-500/15 bg-amber-500/[0.04]">
+                <p className="text-sm text-amber-300">
+                  <strong>Warning:</strong> Regenerating your API key invalidates the old one immediately.
+                </p>
+              </div>
+            </Section>
+
+            {/* ===== WEBHOOKS ===== */}
+            <Section id="webhooks" title="Webhooks">
+              <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                Configure a webhook URL in your seller profile to receive real-time event notifications.
+              </p>
+              <SubHeading>Event: video.created</SubHeading>
+              <CodeBlock
+                language="json"
+                code={`{
+  "event": "video.created",
+  "data": {
+    "video_id": "clx_9e2b7f1c",
+    "order_id": "ORD-12345",
+    "verification_code": "ABC12345",
+    "verification_url": "https://shipproof.netlify.app/v/ABC12345",
+    "video_hash": "sha256:e3b0c44...",
+    "created_at": "2024-01-15T10:30:00.000Z"
+  }
+}`}
+              />
+              <SubHeading>Event: buyer.confirmed</SubHeading>
+              <CodeBlock
+                language="json"
+                code={`{
+  "event": "buyer.confirmed",
+  "data": {
+    "video_id": "clx_9e2b7f1c",
+    "order_id": "ORD-12345",
+    "verification_code": "ABC12345",
+    "condition": "perfect",
+    "comment": "Great packaging!",
+    "confirmed_at": "2024-01-16T14:20:00.000Z"
+  }
+}`}
+              />
+            </Section>
+
+            {/* ===== RATE LIMITS ===== */}
+            <Section id="rate-limits" title="Rate Limits & Plans">
               <div className="rounded-lg border border-white/[0.08] overflow-hidden mb-6">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-white/[0.04] border-b border-white/[0.08]">
-                      <th className="text-left font-semibold text-gray-300 px-4 py-3 w-28">
-                        Status
-                      </th>
-                      <th className="text-left font-semibold text-gray-300 px-4 py-3">
-                        Description
-                      </th>
+                      <th className="text-left font-semibold text-gray-300 px-4 py-3">Plan</th>
+                      <th className="text-left font-semibold text-gray-300 px-4 py-3">Videos/Month</th>
+                      <th className="text-left font-semibold text-gray-300 px-4 py-3">Rate Limit</th>
                     </tr>
                   </thead>
                   <tbody>
                     {[
-                      {
-                        code: 200,
-                        label: 'Success',
-                        desc: 'The request was completed successfully.',
-                        color: 'text-emerald-400',
-                      },
-                      {
-                        code: 400,
-                        label: 'Bad Request',
-                        desc: 'Missing or invalid request parameters.',
-                        color: 'text-amber-400',
-                      },
-                      {
-                        code: 401,
-                        label: 'Unauthorized',
-                        desc: 'Missing, invalid, or expired API key.',
-                        color: 'text-red-400',
-                      },
-                      {
-                        code: 403,
-                        label: 'Forbidden',
-                        desc: 'Authenticated but not authorized for the requested resource.',
-                        color: 'text-orange-400',
-                      },
-                      {
-                        code: 404,
-                        label: 'Not Found',
-                        desc: 'The requested endpoint or resource does not exist.',
-                        color: 'text-blue-400',
-                      },
-                      {
-                        code: 429,
-                        label: 'Rate Limited',
-                        desc: 'Too many requests. Slow down and retry after the indicated cooldown.',
-                        color: 'text-purple-400',
-                      },
-                      {
-                        code: 500,
-                        label: 'Internal Server Error',
-                        desc: 'An unexpected error occurred. Please retry or contact support.',
-                        color: 'text-red-400',
-                      },
+                      { plan: 'Free', videos: '50', rate: '60 req/min' },
+                      { plan: 'Pro', videos: '1,000', rate: '120 req/min' },
+                      { plan: 'Business', videos: '10,000', rate: '300 req/min' },
+                      { plan: 'Enterprise', videos: 'Unlimited', rate: 'Unlimited' },
                     ].map((row) => (
-                      <tr
-                        key={row.code}
-                        className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors"
-                      >
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`text-xs font-bold bg-white/[0.06] px-2 py-0.5 rounded ${row.color}`}
-                            >
-                              {row.code}
-                            </span>
-                            <span className="text-xs text-gray-400">{row.label}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-gray-400 text-xs leading-relaxed">
-                          {row.desc}
-                        </td>
+                      <tr key={row.plan} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]">
+                        <td className="px-4 py-3 text-gray-300 font-medium">{row.plan}</td>
+                        <td className="px-4 py-3 text-gray-400 text-xs font-mono">{row.videos}</td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">{row.rate}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+            </Section>
 
-              <SubHeading>Error Response Format</SubHeading>
-              <CodeBlock
-                language="json"
-                code={`{
-  "success": false,
-  "error": "order_id is required"
-}`}
-              />
-
-              <div className="mt-4 p-4 rounded-lg border border-white/[0.06] bg-white/[0.02]">
-                <p className="text-sm text-gray-400">
-                  <strong className="text-gray-300">Rate limiting:</strong> By default the API
-                  allows 60 requests per minute per API key. The{' '}
-                  <code className="text-gray-300 bg-white/[0.06] px-1.5 py-0.5 rounded text-xs">
-                    X-RateLimit-Remaining
-                  </code>{' '}
-                  and{' '}
-                  <code className="text-gray-300 bg-white/[0.06] px-1.5 py-0.5 rounded text-xs">
-                    X-RateLimit-Reset
-                  </code>{' '}
-                  headers are included in every response.
-                </p>
+            {/* ===== ERROR CODES ===== */}
+            <Section id="error-codes" title="Error Codes" description="HTTP status codes and error response format.">
+              <div className="rounded-lg border border-white/[0.08] overflow-hidden mb-6">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-white/[0.04] border-b border-white/[0.08]">
+                      <th className="text-left font-semibold text-gray-300 px-4 py-3 w-28">Status</th>
+                      <th className="text-left font-semibold text-gray-300 px-4 py-3">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { code: 200, label: 'Success', desc: 'Request completed successfully.', color: 'text-emerald-400' },
+                      { code: 201, label: 'Created', desc: 'Resource created successfully.', color: 'text-emerald-400' },
+                      { code: 400, label: 'Bad Request', desc: 'Missing or invalid parameters.', color: 'text-amber-400' },
+                      { code: 401, label: 'Unauthorized', desc: 'Missing or invalid API key.', color: 'text-red-400' },
+                      { code: 404, label: 'Not Found', desc: 'Resource does not exist.', color: 'text-blue-400' },
+                      { code: 409, label: 'Conflict', desc: 'Resource already exists.', color: 'text-orange-400' },
+                      { code: 429, label: 'Rate Limited', desc: 'Quota exceeded. Upgrade plan.', color: 'text-purple-400' },
+                      { code: 500, label: 'Server Error', desc: 'Unexpected error. Retry or contact support.', color: 'text-red-400' },
+                    ].map((row) => (
+                      <tr key={row.code} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02]">
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-bold bg-white/[0.06] px-2 py-0.5 rounded ${row.color}`}>{row.code}</span>
+                          <span className="text-xs text-gray-400 ml-1">{row.label}</span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">{row.desc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </Section>
 
-            {/* ---- Bottom CTA ---- */}
+            {/* ===== CODE EXAMPLES ===== */}
+            <Section id="code-examples" title="Code Examples">
+              <SubHeading>cURL</SubHeading>
+              <CodeBlock
+                language="bash"
+                code={`curl -X POST https://shipproof.netlify.app/api/v1/video \\
+  -H "X-API-Key: sp_live_your_key_here" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "order_id": "ORD-12345",
+    "buyer_email": "buyer@email.com",
+    "video_data": "'$(base64 -w0 video.mp4)'"
+  }'`}
+              />
+
+              <SubHeading>JavaScript / Node.js</SubHeading>
+              <CodeBlock
+                language="javascript"
+                code={`const response = await fetch('/api/v1/video', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': process.env.SHIPPROOF_API_KEY,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    order_id: 'ORD-12345',
+    buyer_email: 'buyer@email.com',
+    video_data: base64VideoString,
+  }),
+});
+
+const { data } = await response.json();
+console.log(data.verification_url);`}
+              />
+
+              <SubHeading>Python</SubHeading>
+              <CodeBlock
+                language="python"
+                code={`import requests
+
+API_KEY = "sp_live_your_key_here"
+BASE_URL = "https://shipproof.netlify.app/api/v1"
+
+response = requests.post(
+    f"{BASE_URL}/video",
+    headers={
+        "X-API-Key": API_KEY,
+        "Content-Type": "application/json",
+    },
+    json={
+        "order_id": "ORD-12345",
+        "buyer_email": "buyer@email.com",
+        "video_url": "https://s3.amazonaws.com/bucket/video.mp4",
+    },
+)
+
+print(response.json())`}
+              />
+            </Section>
+
+            {/* Bottom CTA */}
             <div className="mt-12 pt-10 border-t border-white/[0.06]">
               <div className="text-center p-8 rounded-xl bg-white/[0.02] border border-white/[0.06]">
                 <h3 className="text-lg font-bold text-white mb-2">Ready to integrate?</h3>
                 <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
-                  Get your API key and start creating tamper-proof video verifications in
-                  minutes.
+                  Get your API key and start creating tamper-proof video verifications in minutes.
                 </p>
                 <Link
-                  href="/dashboard"
+                  href="/"
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition-colors"
                 >
                   Get API Key

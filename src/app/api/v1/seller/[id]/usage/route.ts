@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { authenticateSeller } from '@/lib/api-auth'
+import { authenticateRequest } from '@/lib/api-auth'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await authenticateSeller(request)
+    const auth = await authenticateRequest(request)
     if (auth instanceof NextResponse) return auth
 
     const { id } = await params
-    if (auth.seller.id !== id) {
+    if (auth.id !== id) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 })
     }
 
@@ -34,7 +34,7 @@ export async function GET(
         videos_this_month: videosThisMonth,
         total_videos: totalVideos,
         confirmed_videos: confirmedVideos,
-        plan: auth.seller.plan,
+        plan: auth.plan,
       },
     })
   } catch (error) {

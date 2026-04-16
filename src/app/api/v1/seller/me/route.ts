@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { authenticateRequest, getRateLimit } from '@/lib/api-auth'
+import { authenticateRequest } from '@/lib/api-auth'
 import { startOfMonth, startOfDay, endOfMonth, endOfDay } from 'date-fns'
 
 export async function GET(request: NextRequest) {
@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
     const auth = await authenticateRequest(request)
     if (auth instanceof NextResponse) return auth
 
-    // Count videos this month
     const now = new Date()
     const monthStart = startOfMonth(now)
     const monthEnd = endOfMonth(now)
@@ -30,8 +29,7 @@ export async function GET(request: NextRequest) {
       }),
     ])
 
-    const limits = getRateLimit(auth.plan)
-    const limitLabel = limits.videosPerMonth === -1 ? 'unlimited' : String(limits.videosPerMonth)
+    const limitLabel = auth.videoQuota === -1 ? 'unlimited' : String(auth.videoQuota)
 
     return NextResponse.json({
       success: true,

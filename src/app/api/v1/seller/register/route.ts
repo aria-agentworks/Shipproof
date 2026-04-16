@@ -1,57 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { generateApiKey } from '@/lib/api-auth'
 import { db } from '@/lib/db'
-import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, webhook_url } = await request.json()
+    const body = await request.json()
+    const { name, email, company_name, website } = body
 
     if (!name || !email) {
-      return NextResponse.json({ success: false, error: 'name and email are required' }, { status: 400 })
+      return NextResponse.json({ error: 'name and email are required' }, { status: 400 })
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase()
-    const existing = await db.seller.findUnique({ where: { email: normalizedEmail } })
-
+    const existing = await db.seller.findUnique({ where: { email: email.toLowerCase() } })
     if (existing) {
-      return NextResponse.json({
-        success: true,
-        message: 'Seller already exists',
-        data: {
-          id: existing.id,
-          name: existing.name,
-          email: existing.email,
-          api_key: existing.apiKey,
-          plan: existing.plan,
-        },
-      })
+      return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 })
     }
 
-    const apiKey = `sp_live_${crypto.randomBytes(24).toString('hex')}`
+    const apiKey = generateApiKey()
 
     const seller = await db.seller.create({
       data: {
-        name: String(name).trim(),
-        email: normalizedEmail,
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
         apiKey,
+        brandName: company_name || name.trim(),
         plan: 'free',
-        webhookUrl: webhook_url || null,
+        videoQuota: 50,
       },
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Seller account created',
       data: {
         id: seller.id,
         name: seller.name,
         email: seller.email,
-        api_key: seller.apiKey,
         plan: seller.plan,
+        api_key: seller.apiKey,
+        video_quota: seller.videoQuota,
+        message: 'Your API key is ready. Start integrating with /api/v1/video',
+        docs_url: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/docs`,
       },
-    })
+    }, { status: 201 })
   } catch (error) {
     console.error('Seller registration error:', error)
-    return NextResponse.json({ success: false, error: 'Failed to create seller' }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

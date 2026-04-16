@@ -9,51 +9,52 @@ export async function GET(
 ) {
   try {
     const { code } = await params
+
     const video = await db.video.findUnique({
       where: { uniqueCode: code.toUpperCase() },
-      select: {
-        orderId: true,
-        uniqueCode: true,
-        status: true,
-        videoHash: true,
-        buyerConfirmed: true,
-        buyerConfirmedAt: true,
-        packageCondition: true,
-        buyerComment: true,
-        recordedAt: true,
-      },
     })
 
     if (!video) {
-      return NextResponse.json(
-        { success: false, error: { code: 'NOT_FOUND', message: 'Verification record not found' } },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Verification code not found' }, { status: 404 })
+    }
+
+    // Get seller branding if available
+    let branding = null
+    if (video.sellerId) {
+      const seller = await db.seller.findUnique({
+        where: { id: video.sellerId },
+        select: {
+          brandName: true,
+          brandColor: true,
+          brandLogo: true,
+          customDomain: true,
+        },
+      })
+      if (seller) branding = seller
     }
 
     return NextResponse.json({
-      success: true,
+      valid: true,
       data: {
         order_id: video.orderId,
-        unique_code: video.uniqueCode,
-        video_hash: video.videoHash ? `sha256:${video.videoHash}` : null,
+        verification_code: video.uniqueCode,
         status: video.status,
-        recorded_at: video.recordedAt.toISOString(),
+        recorded_at: video.recordedAt,
         buyer_confirmed: video.buyerConfirmed,
-        buyer_confirmed_at: video.buyerConfirmedAt?.toISOString() || null,
+        buyer_confirmed_at: video.buyerConfirmedAt,
         package_condition: video.packageCondition,
-        buyer_comment: video.buyerComment,
+        video_hash: video.videoHash,
+        has_video: !!video.videoData || !!video.storageKey,
+        branding,
       },
     })
   } catch (error) {
-    console.error('Error verifying code:', error)
-    return NextResponse.json(
-      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to verify code' } },
-      { status: 500 }
-    )
+    console.error('API v1 verify error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
+// POST: Confirm receipt (buyer-facing)
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
@@ -68,17 +69,11 @@ export async function POST(
     })
 
     if (!video) {
-      return NextResponse.json(
-        { success: false, error: { code: 'NOT_FOUND', message: 'Verification record not found' } },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Verification code not found' }, { status: 404 })
     }
 
     if (video.buyerConfirmed) {
-      return NextResponse.json(
-        { success: false, error: { code: 'ALREADY_CONFIRMED', message: 'This package has already been confirmed' } },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Already confirmed' }, { status: 400 })
     }
 
     const condition = package_condition && VALID_CONDITIONS.includes(package_condition)
@@ -92,23 +87,53 @@ export async function POST(
         buyerConfirmedAt: new Date(),
         status: 'confirmed',
         ...(condition && { packageCondition: condition }),
-        ...(buyer_comment && { buyerComment: buyer_comment.trim().substring(0, 500) }),
+        ...(buyer_comment && { buyerComment: String(buyer_comment).trim().substring(0, 500) }),
       },
     })
+
+    // Fire webhook
+    if (video.sellerId) {
+      const seller = await db.seller.findUnique({
+        where: { id: video.sellerId },
+        select: { webhookUrl: true },
+      })
+      if (seller?.webhookUrl) {
+        fetch(seller.webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'buyer.confirmed',
+            data: {
+              video_id: video.id,
+              order_id: video.orderId,
+              verification_code: video.uniqueCode,
+              condition: condition,
+              comment: buyer_comment || null,
+              confirmed_at: updated.buyerConfirmedAt,
+            },
+          }),
+        }).catch(() => {})
+      }
+    }
+
+    // Send seller notification email
+    try {
+      const { sendSellerNotification } = await import('@/lib/email')
+      await sendSellerNotification(video.id, condition, buyer_comment || null)
+    } catch (err) {
+      console.error('Seller notification failed:', err)
+    }
 
     return NextResponse.json({
       success: true,
       data: {
         confirmed: true,
-        confirmed_at: updated.buyerConfirmedAt!.toISOString(),
-        package_condition: updated.packageCondition,
+        confirmation_id: updated.id,
+        confirmed_at: updated.buyerConfirmedAt,
       },
     })
   } catch (error) {
-    console.error('Error confirming receipt:', error)
-    return NextResponse.json(
-      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to confirm receipt' } },
-      { status: 500 }
-    )
+    console.error('API v1 confirm error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

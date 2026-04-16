@@ -7,14 +7,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Seller {
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  apiKey          String    @unique
+  plan            String    @default("free") // free, pro, business, enterprise
+  customDomain    String?
+  brandName       String?
+  brandColor      String?   @default("#059669")
+  brandLogo       String?
+  webhookUrl      String?
+  isActive        Boolean   @default(true)
+  videoQuota      Int       @default(5) // -1 = unlimited
+  videosThisMonth Int       @default(0)
+  resetAt         DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  videos   Video[]
+  payments Payment[]
+
+  @@index([apiKey])
+  @@index([plan])
+}
+
 model Video {
   id               String    @id @default(cuid())
   orderId          String
   buyerEmail       String
   uniqueCode       String    @unique
   status           String    @default("recorded") // recorded, sent, confirmed
-  videoData        String?   // base64 encoded video blob (for serverless hosting like Netlify)
-  videoFilename    String?   // legacy: filesystem path (only works in non-serverless)
+  videoData        String?   // base64 encoded video blob
+  videoFilename    String?   // legacy: filesystem path
   buyerConfirmed   Boolean   @default(false)
   buyerConfirmedAt DateTime?
   packageCondition String?   // perfect, damaged, wrong_item, missing_parts
@@ -23,9 +48,12 @@ model Video {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   sellerId         String?
-  videoHash        String?   // SHA-256 hash for tamper-proof verification
-
   seller           Seller?   @relation(fields: [sellerId], references: [id])
+  videoHash        String?   // SHA-256 hash for tamper verification
+  storageProvider  String?   @default("base64") // base64, s3, r2
+  storageKey       String?   // S3 object key or R2 key
+  fileSize         Int?      // in bytes
+  duration         Float?    // in seconds
 
   @@index([orderId])
   @@index([buyerEmail])
@@ -34,33 +62,19 @@ model Video {
 }
 
 model Payment {
-  id                 String    @id @default(cuid())
-  razorpayOrderId    String    @unique
-  razorpayPaymentId  String
-  razorpaySignature  String
-  planKey            String    // free, pro, business
-  status             String    @default("completed") // pending, completed, failed
-  amount             Int
-  currency           String    @default("INR")
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  razorpayOrderId   String    @unique
+  razorpayPaymentId String
+  razorpaySignature String
+  planKey           String    // free, pro, business
+  status            String    @default("completed") // pending, completed, failed
+  amount            Int
+  currency          String    @default("INR")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  sellerId          String?
+  seller            Seller?   @relation(fields: [sellerId], references: [id])
 
   @@index([planKey])
   @@index([status])
-}
-
-model Seller {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  apiKey    String   @unique
-  plan      String   @default("free") // free, pro, business, enterprise
-  webhookUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  videos Video[]
-
-  @@index([apiKey])
-  @@index([plan])
 }

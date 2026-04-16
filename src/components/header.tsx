@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Menu, X, Camera, CreditCard, Building2, BookOpen } from 'lucide-react'
+import { Menu, X, BookOpen, CreditCard, LayoutDashboard, Terminal, Key } from 'lucide-react'
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -25,27 +25,16 @@ export default function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden sm:flex items-center gap-1">
-          <Link href="/record">
-            <Button variant="ghost" size="sm" className="text-emerald-100 hover:text-white hover:bg-white/10">
-              <Camera className="w-4 h-4 mr-1.5" />
-              Record
-            </Button>
-          </Link>
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" className="text-emerald-100 hover:text-white hover:bg-white/10">
-              Dashboard
-            </Button>
-          </Link>
-          <Link href="/enterprise">
-            <Button variant="ghost" size="sm" className="text-emerald-100 hover:text-white hover:bg-white/10">
-              <Building2 className="w-4 h-4 mr-1.5" />
-              Enterprise
-            </Button>
-          </Link>
           <Link href="/docs">
             <Button variant="ghost" size="sm" className="text-emerald-100 hover:text-white hover:bg-white/10">
               <BookOpen className="w-4 h-4 mr-1.5" />
               Docs
+            </Button>
+          </Link>
+          <Link href="/docs#endpoints">
+            <Button variant="ghost" size="sm" className="text-emerald-100 hover:text-white hover:bg-white/10">
+              <Terminal className="w-4 h-4 mr-1.5" />
+              API Reference
             </Button>
           </Link>
           <Link href="/pricing">
@@ -54,9 +43,16 @@ export default function Header() {
               Pricing
             </Button>
           </Link>
-          <Link href="/record" className="ml-2">
+          <Link href="/dashboard">
+            <Button variant="ghost" size="sm" className="text-emerald-100 hover:text-white hover:bg-white/10">
+              <LayoutDashboard className="w-4 h-4 mr-1.5" />
+              Dashboard
+            </Button>
+          </Link>
+          <Link href="/docs" className="ml-2">
             <Button size="sm" className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold shadow-sm">
-              Start Free
+              <Key className="w-4 h-4 mr-1.5" />
+              Get API Key
             </Button>
           </Link>
         </nav>
@@ -75,27 +71,16 @@ export default function Header() {
       {/* Mobile nav */}
       {menuOpen && (
         <nav className="sm:hidden border-t border-white/10 bg-emerald-800/95 backdrop-blur px-4 py-3 space-y-1">
-          <Link href="/record" onClick={() => setMenuOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/10">
-              <Camera className="w-4 h-4 mr-2" />
-              Record
-            </Button>
-          </Link>
-          <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/10">
-              Dashboard
-            </Button>
-          </Link>
-          <Link href="/enterprise" onClick={() => setMenuOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/10">
-              <Building2 className="w-4 h-4 mr-2" />
-              Enterprise
-            </Button>
-          </Link>
           <Link href="/docs" onClick={() => setMenuOpen(false)}>
             <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/10">
               <BookOpen className="w-4 h-4 mr-2" />
               Docs
+            </Button>
+          </Link>
+          <Link href="/docs#endpoints" onClick={() => setMenuOpen(false)}>
+            <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/10">
+              <Terminal className="w-4 h-4 mr-2" />
+              API Reference
             </Button>
           </Link>
           <Link href="/pricing" onClick={() => setMenuOpen(false)}>
@@ -104,9 +89,16 @@ export default function Header() {
               Pricing
             </Button>
           </Link>
-          <Link href="/record" onClick={() => setMenuOpen(false)} className="pt-2">
+          <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
+            <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/10">
+              <LayoutDashboard className="w-4 h-4 mr-2" />
+              Dashboard
+            </Button>
+          </Link>
+          <Link href="/docs" onClick={() => setMenuOpen(false)} className="pt-2">
             <Button className="w-full bg-white text-emerald-700 hover:bg-emerald-50 font-semibold">
-              Start Free
+              <Key className="w-4 h-4 mr-2" />
+              Get API Key
             </Button>
           </Link>
         </nav>
