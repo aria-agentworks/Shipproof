@@ -21,9 +21,15 @@ import {
   MessageSquare,
   Send,
   Fingerprint,
+  Lock,
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface Branding {
   brandName: string | null
@@ -258,13 +264,26 @@ export default function VerifyPage({ params }: { params: Promise<{ code: string 
         {/* Tamper Proof Badge */}
         {verifyData.video_hash && (
           <div className="flex items-center justify-center">
-            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-full">
-              <Fingerprint className="w-4 h-4 text-emerald-600" />
-              <span className="text-xs font-semibold text-emerald-700">Tamper Proof Verified</span>
-              <span className="text-[10px] font-mono text-emerald-600 opacity-70">
-                SHA-256
-              </span>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className="flex items-center gap-2 px-4 py-2 rounded-full border cursor-default"
+                  style={{
+                    backgroundColor: `${brandColor}10`,
+                    borderColor: `${brandColor}30`,
+                  }}
+                >
+                  <Lock className="w-4 h-4" style={{ color: brandColor }} />
+                  <span className="text-xs font-semibold" style={{ color: brandColor }}>
+                    SHA-256 Hash: {verifyData.video_hash.slice(0, 12)}...
+                  </span>
+                  <ShieldCheck className="w-3 h-3" style={{ color: brandColor, opacity: 0.7 }} />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                This video's cryptographic hash proves it has not been modified.
+              </TooltipContent>
+            </Tooltip>
           </div>
         )}
 
