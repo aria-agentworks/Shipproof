@@ -1,121 +1,90 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { authenticateRequest, computeVideoHash } from '@/lib/api-auth'
 import { generateUniqueCode } from '@/lib/utils-shipproof'
-
-function getBaseUrl() {
-  return process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || ''
-}
+import { authenticateSeller } from '@/lib/api-auth'
+import { sendProofEmail } from '@/lib/email'
+import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await authenticateRequest(request)
+    const auth = await authenticateSeller(request)
     if (auth instanceof NextResponse) return auth
+    const { seller } = auth
 
-    const contentType = request.headers.get('content-type') || ''
-    const isMultipart = contentType.includes('multipart/form-data')
+    const body = await request.json()
+    const { order_id, buyer_email, video_url, video_hash, video_data, send_email = true } = body
 
-    let orderId: string
-    let buyerEmail: string | undefined
-    let videoData: string | undefined
-    let metadata: Record<string, unknown> | undefined
-
-    if (isMultipart) {
-      const formData = await request.formData()
-      orderId = (formData.get('order_id') as string) || ''
-      buyerEmail = (formData.get('buyer_email') as string) || undefined
-      const videoFile = formData.get('video_file') as File | null
-
-      if (!orderId.trim()) {
-        return NextResponse.json(
-          { success: false, error: { code: 'VALIDATION_ERROR', message: 'order_id is required' } },
-          { status: 400 }
-        )
-      }
-
-      if (videoFile) {
-        const arrayBuffer = await videoFile.arrayBuffer()
-        const buffer = Buffer.from(arrayBuffer)
-        videoData = buffer.toString('base64')
-      }
-    } else {
-      const body = await request.json()
-      orderId = body.order_id || ''
-      buyerEmail = body.buyer_email || undefined
-      videoData = body.video_data || undefined
-      metadata = body.metadata || undefined
+    if (!order_id) {
+      return NextResponse.json({ error: 'order_id is required' }, { status: 400 })
     }
 
-    if (!orderId.trim()) {
-      return NextResponse.json(
-        { success: false, error: { code: 'VALIDATION_ERROR', message: 'order_id is required' } },
-        { status: 400 }
-      )
+    if (!video_url && !video_data) {
+      return NextResponse.json({ error: 'video_url or video_data is required' }, { status: 400 })
     }
 
-    if (!videoData) {
-      return NextResponse.json(
-        { success: false, error: { code: 'VALIDATION_ERROR', message: 'video_data or video_file is required' } },
-        { status: 400 }
-      )
+    let hash = video_hash
+    if (video_data && !hash) {
+      const buffer = Buffer.from(video_data.replace(/^data:[^;]+;base64,/, ''), 'base64')
+      hash = `sha256:${crypto.createHash('sha256').update(buffer).digest('hex')}`
     }
 
-    // Generate unique code - ensure it doesn't already exist
-    let uniqueCode = generateUniqueCode(6)
+    let uniqueCode = generateUniqueCode(8)
     let exists = await db.video.findUnique({ where: { uniqueCode } })
     let attempts = 0
-    while (exists && attempts < 10) {
-      uniqueCode = generateUniqueCode(6)
+    while (exists && attempts < 20) {
+      uniqueCode = generateUniqueCode(8)
       exists = await db.video.findUnique({ where: { uniqueCode } })
       attempts++
     }
 
-    if (exists) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INTERNAL_ERROR', message: 'Could not generate unique code. Please try again.' } },
-        { status: 500 }
-      )
-    }
-
-    // Compute SHA-256 hash for tamper-proof verification
-    const videoHash = await computeVideoHash(videoData)
-
-    const baseUrl = getBaseUrl()
-    const verificationUrl = `${baseUrl}/api/v1/verify/${uniqueCode}`
-
     const video = await db.video.create({
       data: {
-        orderId: orderId.trim(),
-        buyerEmail: buyerEmail ? buyerEmail.trim().toLowerCase() : `${auth.id}@shipproof.internal`,
-        videoData,
+        orderId: String(order_id).trim(),
+        buyerEmail: buyer_email ? String(buyer_email).trim().toLowerCase() : null,
+        videoData: video_data || null,
+        videoFilename: video_url || null,
         uniqueCode,
-        status: 'recorded',
-        sellerId: auth.id,
-        videoHash,
+        status: buyer_email && send_email ? 'sent' : 'recorded',
+        sellerId: seller.id,
+        videoHash: hash || null,
       },
     })
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          id: video.id,
+    if (buyer_email && send_email) {
+      try { await sendProofEmail(video.id) } catch (emailErr) {
+        console.error('Email send failed (non-blocking):', emailErr)
+      }
+    }
+
+    if (seller.webhookUrl) {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || ''
+      fetch(seller.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'video.created',
+          video_id: video.id,
           order_id: video.orderId,
           unique_code: video.uniqueCode,
-          verification_url: verificationUrl,
-          video_hash: `sha256:${videoHash}`,
-          created_at: video.createdAt.toISOString(),
-          status: video.status,
-          ...(metadata ? { metadata } : {}),
-        },
-      },
-      { status: 201 }
-    )
+          verification_url: `${baseUrl}/v/${video.uniqueCode}`,
+          timestamp: video.recordedAt,
+          hash: video.videoHash,
+        }),
+      }).catch(() => {})
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.BASE_URL || ''
+
+    return NextResponse.json({
+      success: true,
+      verification_url: `${baseUrl}/v/${video.uniqueCode}`,
+      unique_code: video.uniqueCode,
+      timestamp: video.recordedAt,
+      hash: video.videoHash,
+      video_id: video.id,
+    })
   } catch (error) {
-    console.error('Error creating video:', error)
-    return NextResponse.json(
-      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to create video record' } },
-      { status: 500 }
-    )
+    console.error('API v1 video error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

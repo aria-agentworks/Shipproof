@@ -1,450 +1,345 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import Header from '@/components/header'
 import {
-  ArrowRight,
   Shield,
-  Globe,
   Server,
+  Zap,
+  Globe,
   Webhook,
-  Layers,
-  HeadphonesIcon,
-  CheckCircle,
+  Users,
+  ArrowRight,
+  Code,
   Lock,
-  Clock,
-  FileCheck,
-  Fingerprint,
+  CheckCircle,
+  Terminal,
+  Building2,
+  Upload,
+  Hash,
+  Bell,
+  Layers,
 } from 'lucide-react'
 
-const trustMetrics = [
-  { label: 'SOC 2 Type II Compliant' },
-  { label: '99.99% Uptime SLA' },
-  { label: 'SHA-256 Video Hashing' },
-  { label: 'Sub-200ms API Response' },
-  { label: 'GDPR Ready' },
-  { label: '256-bit AES Encryption' },
+const trustBadges = [
+  { label: 'SOC2 Type II' },
+  { label: '99.99% Uptime' },
+  { label: 'GDPR Compliant' },
+  { label: 'SHA-256 Hashing' },
+  { label: 'End-to-End Encrypted' },
+]
+
+const features = [
+  {
+    icon: Code,
+    title: 'API-First Architecture',
+    description: 'RESTful API with programmatic video upload, verification, and webhook callbacks. Integrate in minutes, not months.',
+  },
+  {
+    icon: Globe,
+    title: 'White-Label Ready',
+    description: 'Your buyers see your brand, not ours. Custom domains, custom email templates, zero ShipProof branding on verification pages.',
+  },
+  {
+    icon: Server,
+    title: 'Bulk Processing',
+    description: 'Handle 100k+ videos per day. S3-compatible storage, async processing pipeline, and queue-based email delivery.',
+  },
+  {
+    icon: Hash,
+    title: 'Tamper-Proof Hashing',
+    description: 'SHA-256 hash computed on every video on upload. Blockchain-ready audit trail. Cryptographic proof of authenticity.',
+  },
+  {
+    icon: Bell,
+    title: 'Webhook Notifications',
+    description: 'Real-time callbacks for every event: video.created, email.sent, buyer.confirmed. Integrate with any system.',
+  },
+  {
+    icon: Layers,
+    title: 'Multi-Tenant',
+    description: 'Manage thousands of sellers with per-API-key authentication, isolated data, and per-seller usage tracking.',
+  },
 ]
 
 const steps = [
   {
     num: '01',
-    title: 'Your warehouse captures the packing video',
-    description:
-      'Camera systems, conveyor belt integrations, or manual uploads send video to our API. Any source, any format, any volume.',
+    icon: Upload,
+    title: 'Upload',
+    description: 'Your warehouse system or camera sends the video via our REST API. Supports S3 URLs, base64, and multipart uploads.',
   },
   {
     num: '02',
-    title: 'ShipProof stamps and stores',
-    description:
-      'Every video is hashed with SHA-256, metadata is embedded, and stored in distributed storage. Tamper-proof by design.',
+    icon: Lock,
+    title: 'Stamp & Store',
+    description: 'We compute the SHA-256 hash, store the video, and generate a unique verification URL. Tamper-proof by design.',
   },
   {
     num: '03',
-    title: 'Buyer verifies via your domain',
-    description:
-      'We generate a white-label verification link on YOUR domain. No ShipProof branding. Your buyer, your experience.',
+    icon: CheckCircle,
+    title: 'Verify',
+    description: 'Buyer opens the link, watches the video, confirms receipt. You get a webhook with the confirmation data.',
   },
 ]
 
-const features = [
-  {
-    icon: Globe,
-    title: 'White-Label',
-    description:
-      'Your domain, your branding, your buyer experience. ShipProof is invisible infrastructure.',
-  },
-  {
-    icon: Fingerprint,
-    title: 'Tamper-Proof Hashing',
-    description:
-      'SHA-256 hash of every video stored on-chain. If a single byte changes, verification fails.',
-  },
-  {
-    icon: Server,
-    title: 'Scale to Millions',
-    description:
-      'Built on distributed infrastructure. 100,000 videos/day is the starting point, not the ceiling.',
-  },
-  {
-    icon: Webhook,
-    title: 'Real-Time Webhooks',
-    description:
-      'Get notified the instant a buyer confirms or disputes. Integrate with your order management system.',
-  },
-  {
-    icon: Layers,
-    title: 'Multi-Platform',
-    description:
-      'One API, every platform. Works with Shopify, Amazon, Etsy, WooCommerce, or your custom stack.',
-  },
-  {
-    icon: HeadphonesIcon,
-    title: 'Enterprise Support',
-    description:
-      'Dedicated account manager, 99.99% SLA, priority onboarding, and custom integrations.',
-  },
-]
-
-const complianceItems = [
-  {
-    icon: FileCheck,
-    title: 'SOC 2 Type II',
-    description:
-      'Annual audits by independent assessors. Your data handling meets the highest standards.',
-  },
-  {
-    icon: Shield,
-    title: 'GDPR Compliant',
-    description:
-      'Data processing agreements, right to erasure, and EU data residency available.',
-  },
-  {
-    icon: Lock,
-    title: 'AES-256 Encryption',
-    description:
-      'All videos encrypted at rest and in transit. Your content, protected.',
-  },
-  {
-    icon: Clock,
-    title: '99.99% Uptime SLA',
-    description:
-      'Backed by distributed infrastructure with automatic failover. We don\'t go down.',
-  },
+const enterpriseFeatures = [
+  'Dedicated infrastructure',
+  'Custom SLA (99.99% uptime)',
+  'SSO / SAML authentication',
+  'Priority email & Slack support',
+  'Custom integrations',
+  'Data residency options',
+  'Audit log exports',
+  'Onboarding & training',
 ]
 
 export default function EnterprisePage() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#0a0a0a] text-white">
-      <Header />
+    <div className="min-h-screen bg-gray-950 text-white">
+      {/* Nav */}
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-gray-950/90 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image src="/logo.jpeg" alt="ShipProof" width={28} height={50} className="h-8 w-auto rounded-md" />
+            <span className="font-bold text-lg">ShipProof</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/docs">
+              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10">
+                API Docs
+              </Button>
+            </Link>
+            <Link href="/pricing">
+              <Button variant="ghost" size="sm" className="text-gray-300 hover:text-white hover:bg-white/10">
+                Pricing
+              </Button>
+            </Link>
+            <Link href="/docs">
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold ml-2">
+                Get API Key
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </nav>
 
-      <main className="flex-1">
-        {/* ===== HERO ===== */}
-        <section className="relative overflow-hidden">
-          {/* Background effects */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.08),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(16,185,129,0.05),transparent_50%)]" />
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.08),transparent_60%)]" />
+        <div className="relative max-w-4xl mx-auto px-4 pt-20 pb-16 sm:pt-28 sm:pb-24 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-8">
+            <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-emerald-400 text-sm font-medium">Enterprise</span>
+          </div>
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1]">
+            Video Proof Infrastructure
+            <br />
+            <span className="text-emerald-400">for Enterprise</span>
+          </h1>
+          <p className="mt-6 text-base sm:text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
+            Programmatic packing verification at scale. 100,000+ shipments per day.
+            API-first, white-label ready, tamper-proof by design.
+          </p>
+          <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/docs">
+              <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 h-12 text-base">
+                Get Your API Key
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+            <Link href="/docs">
+              <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 px-8 h-12 text-base">
+                <Terminal className="w-4 h-4 mr-2" />
+                Read the Docs
+              </Button>
+            </Link>
+          </div>
+          {/* Trust badges */}
+          <div className="mt-14 flex flex-wrap justify-center gap-3">
+            {trustBadges.map((badge) => (
+              <div key={badge.label} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg">
+                <Shield className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-xs font-medium text-gray-300">{badge.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-          {/* Subtle grid */}
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage:
-                'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)',
-              backgroundSize: '64px 64px',
-            }}
-          />
-
-          <div className="relative px-4 py-20 sm:py-28 lg:py-36">
-            <div className="max-w-4xl mx-auto text-center">
-              {/* Badge */}
-              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15 px-4 py-1.5 text-sm font-medium mb-8">
-                Enterprise API
-              </Badge>
-
-              {/* Headline */}
-              <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
-                Video Proof Infrastructure
+      {/* Code Example */}
+      <section className="border-y border-white/10 bg-gray-900/50">
+        <div className="max-w-5xl mx-auto px-4 py-16 sm:py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+            <div className="flex flex-col justify-center">
+              <h2 className="text-2xl sm:text-3xl font-bold">
+                Ship your first proof
                 <br />
-                <span className="text-gray-400">for Platforms</span>
-              </h1>
-
-              {/* Subtitle */}
-              <p className="mt-6 text-base sm:text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed">
-                ShipProof provides the API layer that handles packing video recording,
-                tamper-proof hashing, buyer verification, and dispute resolution. Integrate
-                in minutes, scale to millions.
+                <span className="text-emerald-400">in 30 seconds</span>
+              </h2>
+              <p className="mt-4 text-gray-400 leading-relaxed">
+                One API call. That&apos;s it. Send us a video URL, we return a tamper-proof verification link.
+                No SDK required. No complex setup. Works with any language.
               </p>
-
-              {/* CTA Buttons */}
-              <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-8 py-6 text-base rounded-lg transition-all"
-                >
-                  <Link href="/docs">
-                    Read API Docs
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="lg"
-                  variant="outline"
-                  className="border-gray-700 bg-transparent text-gray-300 hover:bg-white/5 hover:text-white px-8 py-6 text-base rounded-lg transition-all"
-                >
-                  <a href="mailto:sales@shipproof.com">Contact Sales</a>
-                </Button>
+              <div className="mt-8 space-y-3">
+                {['Programmatic upload via REST API', 'SHA-256 hash computed automatically', 'Verification link returned instantly', 'Email sent to buyer (optional)'].map((item) => (
+                  <div key={item} className="flex items-center gap-2.5">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-300">{item}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* ===== TRUST METRICS BAR ===== */}
-        <section className="border-y border-white/5 bg-white/[0.02]">
-          <div className="max-w-6xl mx-auto px-4 py-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
-              {trustMetrics.map((metric) => (
-                <div
-                  key={metric.label}
-                  className="flex items-center gap-2 text-gray-400 text-sm font-medium"
-                >
-                  <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                  <span>{metric.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ===== HOW IT WORKS ===== */}
-        <section className="py-20 sm:py-28 px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-16">
-              <p className="text-sm font-semibold text-emerald-400 uppercase tracking-widest">
-                How It Works
-              </p>
-              <h2 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-                Three steps to verified proof
-              </h2>
-            </div>
-
-            <div className="flex flex-col gap-10 sm:gap-14">
-              {steps.map((step, i) => (
-                <div key={i} className="flex items-start gap-5 sm:gap-8">
-                  <div className="flex-shrink-0 flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                      <span className="text-emerald-400 font-bold text-sm">{step.num}</span>
-                    </div>
-                    {i < steps.length - 1 && (
-                      <div className="w-px h-10 sm:h-14 bg-gradient-to-b from-white/10 to-transparent mt-3" />
-                    )}
+            <div className="space-y-4">
+              {/* Request */}
+              <div className="bg-gray-900 border border-white/10 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded">POST</span>
+                    <span className="text-xs text-gray-400 font-mono">/api/v1/video</span>
                   </div>
-                  <div className="pt-2">
-                    <h3 className="text-lg sm:text-xl font-semibold text-white">{step.title}</h3>
-                    <p className="mt-2 text-gray-400 leading-relaxed text-sm sm:text-base max-w-xl">
-                      {step.description}
-                    </p>
-                  </div>
+                  <span className="text-xs text-gray-500">bash</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ===== API OVERVIEW ===== */}
-        <section className="py-20 sm:py-28 px-4 bg-white/[0.02] border-y border-white/5">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <p className="text-sm font-semibold text-emerald-400 uppercase tracking-widest">
-                API Overview
-              </p>
-              <h2 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-                Ship a video in one call
-              </h2>
-            </div>
-
-            <div className="relative rounded-xl overflow-hidden border border-white/10 bg-[#111111] shadow-2xl">
-              {/* Code window header */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-white/5 border-b border-white/10">
-                <div className="w-3 h-3 rounded-full bg-red-500/60" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-                <div className="w-3 h-3 rounded-full bg-green-500/60" />
-                <span className="ml-3 text-xs text-gray-500 font-mono">POST /api/v1/video</span>
+                <pre className="p-4 text-xs sm:text-sm text-gray-300 font-mono overflow-x-auto leading-relaxed">
+{`curl -X POST https://shipproof.netlify.app/api/v1/video \\
+  -H "X-API-Key: sp_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "order_id": "ORD-12345",
+    "buyer_email": "buyer@example.com",
+    "video_url": "https://s3.amazonaws.com/bucket/video.webm"
+  }'`}
+                </pre>
               </div>
-              <div className="p-5 sm:p-6 overflow-x-auto">
-                <pre className="text-[13px] sm:text-sm font-mono leading-relaxed text-gray-300">
-                  <code>
-{`POST /api/v1/video`}
-<span className="text-gray-500">{`Authorization: Bearer sp_live_abc123`}</span>
-{`
-{`}
-{`  "order_id": "ORD-2024-78901",`}
-{`  "buyer_email": "customer@example.com",`}
-{`  "video_data": "<base64-encoded-video>"`}
-{`}
-
-`}
-<span className="text-gray-500">{`// Response:`}</span>
-{`
-{`}
-{`  "success": true,`}
-{`  "data": {`}
-{`    "verification_url": "https://yourdomain.com/verify/ABC123",`}
-{`    "video_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb924...",`}
-{`    "created_at": "2024-01-15T10:30:00Z"`}
-{`  }`}
-{`}`}
-                  </code>
+              {/* Response */}
+              <div className="bg-gray-900 border border-white/10 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10">
+                  <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs font-bold rounded">Response</span>
+                  <span className="text-xs text-gray-500">200 OK</span>
+                </div>
+                <pre className="p-4 text-xs sm:text-sm text-gray-300 font-mono overflow-x-auto leading-relaxed">
+{`{
+  "success": true,
+  "verification_url": "https://shipproof.netlify.app/v/ABC12345",
+  "unique_code": "ABC12345",
+  "timestamp": "2026-04-16T12:00:00Z",
+  "hash": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+  "video_id": "clx..."
+}`}
                 </pre>
               </div>
             </div>
-
-            <div className="mt-8 text-center">
-              <Button
-                asChild
-                variant="outline"
-                className="border-gray-700 bg-transparent text-gray-300 hover:bg-white/5 hover:text-white"
-              >
-                <Link href="/docs">
-                  View Full API Reference
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        {/* ===== WHY ENTERPRISE ===== */}
-        <section className="py-20 sm:py-28 px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-14">
-              <p className="text-sm font-semibold text-emerald-400 uppercase tracking-widest">
-                Why Enterprise
-              </p>
-              <h2 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-                Built for scale. Designed for trust.
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {features.map((feature, i) => {
-                const Icon = feature.icon
-                return (
-                  <div
-                    key={i}
-                    className="group p-6 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/10 transition-all"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-4">
-                      <Icon className="w-5 h-5 text-emerald-400" />
-                    </div>
-                    <h3 className="text-base font-semibold text-white">{feature.title}</h3>
-                    <p className="mt-2 text-sm text-gray-400 leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* ===== COMPLIANCE ===== */}
-        <section className="py-20 sm:py-28 px-4 bg-white/[0.02] border-y border-white/5">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-14">
-              <p className="text-sm font-semibold text-emerald-400 uppercase tracking-widest">
-                Security
-              </p>
-              <h2 className="mt-3 text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-                Enterprise-Grade Security & Compliance
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {complianceItems.map((item, i) => {
-                const Icon = item.icon
-                return (
-                  <div
-                    key={i}
-                    className="p-6 rounded-xl border border-white/5 bg-white/[0.02]"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-4">
-                      <Icon className="w-5 h-5 text-emerald-400" />
-                    </div>
-                    <h3 className="text-base font-semibold text-white">{item.title}</h3>
-                    <p className="mt-2 text-sm text-gray-400 leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* ===== CTA ===== */}
-        <section className="py-20 sm:py-28 px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/80 to-[#0a0a0a] p-10 sm:p-16 text-center">
-              {/* Background decorations */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-
-              <div className="relative">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-                  Ready to Integrate?
-                </h2>
-                <p className="mt-4 text-gray-400 max-w-lg mx-auto text-base sm:text-lg leading-relaxed">
-                  Get your API key in 60 seconds. No contracts, no talks. Start with 1,000 free
-                  videos.
-                </p>
-                <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button
-                    asChild
-                    size="lg"
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-8 py-6 text-base rounded-lg transition-all"
-                  >
-                    <Link href="/docs">
-                      Get API Key
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="border-gray-700 bg-transparent text-gray-300 hover:bg-white/5 hover:text-white px-8 py-6 text-base rounded-lg transition-all"
-                  >
-                    <a href="mailto:sales@shipproof.com">Talk to Sales</a>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* ===== FOOTER ===== */}
-      <footer className="border-t border-white/5 bg-[#0a0a0a]">
-        <div className="max-w-6xl mx-auto px-4 py-10">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <span className="text-base font-bold text-white">ShipProof</span>
-              <p className="mt-1 text-sm text-gray-500">
-                Video proof infrastructure for modern commerce.
-              </p>
-            </div>
-          </div>
-          <div className="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex gap-6 text-sm">
-              <Link
-                href="/docs"
-                className="text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                Docs
-              </Link>
-              <span className="text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
-                Status
-              </span>
-              <span className="text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
-                Privacy
-              </span>
-              <span className="text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
-                Terms
-              </span>
-              <span className="text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
-                Security
-              </span>
-            </div>
-            <p className="text-xs text-gray-600">
-              &copy; 2024 ShipProof Inc. All rights reserved.
-            </p>
           </div>
         </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="py-16 sm:py-24 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-sm font-semibold text-emerald-400 uppercase tracking-widest">Enterprise Features</p>
+            <h2 className="mt-3 text-2xl sm:text-3xl font-bold">Built for Scale</h2>
+            <p className="mt-3 text-gray-500 max-w-md mx-auto">
+              Every feature designed for platforms processing thousands of shipments daily.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map((feature) => {
+              const Icon = feature.icon
+              return (
+                <div key={feature.title} className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/[0.07] transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-4">
+                    <Icon className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <h3 className="font-semibold text-white text-base">{feature.title}</h3>
+                  <p className="mt-2 text-sm text-gray-400 leading-relaxed">{feature.description}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-16 sm:py-24 px-4 bg-gray-900/30 border-y border-white/5">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-sm font-semibold text-emerald-400 uppercase tracking-widest">Simple Integration</p>
+            <h2 className="mt-3 text-2xl sm:text-3xl font-bold">Three Steps to Ship Proof</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            {steps.map((step) => {
+              const Icon = step.icon
+              return (
+                <div key={step.num} className="text-center sm:text-left">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 mb-4">
+                    <Icon className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <span className="text-xs font-bold text-gray-600 uppercase tracking-widest">Step {step.num}</span>
+                  <h3 className="text-lg font-bold text-white mt-1">{step.title}</h3>
+                  <p className="mt-2 text-sm text-gray-400 leading-relaxed">{step.description}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Enterprise Pricing */}
+      <section className="py-16 sm:py-24 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-800 p-8 sm:p-12">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-4">
+                <Building2 className="w-5 h-5 text-emerald-400" />
+                <span className="text-emerald-400 text-sm font-semibold uppercase tracking-widest">Enterprise</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold">Custom pricing for high-volume operations</h2>
+              <p className="mt-4 text-gray-400 max-w-lg">
+                Dedicated infrastructure, custom SLAs, and white-glove onboarding. Built for platforms shipping 10k+ packages daily.
+              </p>
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {enterpriseFeatures.map((feat) => (
+                  <div key={feat} className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-300">{feat}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-10 flex flex-col sm:flex-row gap-3">
+                <Button size="lg" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 h-12">
+                  Contact Sales
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+              <p className="mt-4 text-xs text-gray-500">
+                Or start free: 100 videos/month, no credit card. <Link href="/docs" className="text-emerald-400 hover:underline">Get API key</Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/10 py-10 px-4">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <Image src="/logo.jpeg" alt="ShipProof" width={24} height={43} className="h-6 w-auto rounded" />
+            <span className="text-sm font-semibold text-gray-300">ShipProof</span>
+          </div>
+          <p className="text-xs text-gray-500">The video proof infrastructure platform.</p>
+          <div className="flex gap-5 text-xs text-gray-500">
+            <Link href="/docs" className="hover:text-gray-300 transition-colors">API Docs</Link>
+            <Link href="/pricing" className="hover:text-gray-300 transition-colors">Pricing</Link>
+            <span className="hover:text-gray-300 cursor-pointer transition-colors">Status</span>
+          </div>
+        </div>
+        <p className="text-center text-xs text-gray-700 mt-6">
+          &copy; {new Date().getFullYear()} ShipProof. All rights reserved.
+        </p>
       </footer>
     </div>
   )

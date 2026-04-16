@@ -1,725 +1,929 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import Header from '@/components/header'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   BookOpen,
-  Terminal,
   Key,
   Upload,
-  CheckCircle,
-  List,
-  Info,
+  BarChart3,
   AlertTriangle,
-  Webhook,
-  ChevronRight,
   Copy,
+  ChevronRight,
+  ArrowRight,
+  Terminal,
   Check,
+  Menu,
+  X,
 } from 'lucide-react'
 
-const navItems = [
-  { id: 'getting-started', label: 'Getting Started', icon: Terminal },
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
+
+interface NavItem {
+  id: string
+  label: string
+  icon: React.ElementType
+}
+
+/* ------------------------------------------------------------------ */
+/*  Constants                                                          */
+/* ------------------------------------------------------------------ */
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'overview', label: 'Overview', icon: BookOpen },
   { id: 'authentication', label: 'Authentication', icon: Key },
+  { id: 'register-seller', label: 'Register Seller', icon: ArrowRight },
   { id: 'upload-video', label: 'Upload Video', icon: Upload },
-  { id: 'verify-video', label: 'Verify Video', icon: CheckCircle },
-  { id: 'confirm-receipt', label: 'Confirm Receipt', icon: CheckCircle },
-  { id: 'list-videos', label: 'List Videos', icon: List },
-  { id: 'get-video', label: 'Get Video Details', icon: Info },
-  { id: 'rate-limits', label: 'Rate Limits', icon: AlertTriangle },
+  { id: 'video-status', label: 'Video Status', icon: BarChart3 },
+  { id: 'usage-stats', label: 'Usage Stats', icon: BarChart3 },
   { id: 'error-codes', label: 'Error Codes', icon: AlertTriangle },
-  { id: 'webhooks', label: 'Webhooks', icon: Webhook },
 ]
 
-function CodeBlock({ code }: { code: string }) {
+/* ------------------------------------------------------------------ */
+/*  Helper: Code Block                                                 */
+/* ------------------------------------------------------------------ */
+
+function CodeBlock({
+  code,
+  language,
+}: {
+  code: string
+  language?: string
+}) {
   const [copied, setCopied] = useState(false)
 
-  const handleCopy = () => {
+  const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(code)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-  }
+  }, [code])
 
   return (
-    <div className="relative group rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-      <button
-        onClick={handleCopy}
-        className="absolute top-3 right-3 p-1.5 rounded-md bg-white border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
-        aria-label="Copy code"
-      >
-        {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-      </button>
-      <pre className="p-4 sm:p-5 overflow-x-auto text-[13px] sm:text-sm font-mono leading-relaxed text-gray-700">
+    <div className="relative group rounded-lg overflow-hidden border border-white/[0.08] bg-gray-900">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.03] border-b border-white/[0.08]">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+          <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+          {language && (
+            <span className="ml-2 text-[11px] font-medium uppercase tracking-wider text-gray-500">
+              {language}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-colors"
+          aria-label="Copy code"
+        >
+          {copied ? (
+            <Check className="w-3.5 h-3.5 text-emerald-400" />
+          ) : (
+            <Copy className="w-3.5 h-3.5" />
+          )}
+          <span className="text-[11px]">{copied ? 'Copied' : 'Copy'}</span>
+        </button>
+      </div>
+      {/* Code */}
+      <pre className="p-4 sm:p-5 overflow-x-auto text-[13px] leading-relaxed text-gray-300">
         <code>{code}</code>
       </pre>
     </div>
   )
 }
 
-function JsonBlock({ code }: { code: string }) {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  return (
-    <div className="relative group rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-      <button
-        onClick={handleCopy}
-        className="absolute top-3 right-3 p-1.5 rounded-md bg-white border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all opacity-0 group-hover:opacity-100"
-        aria-label="Copy code"
-      >
-        {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-      </button>
-      <pre className="p-4 sm:p-5 overflow-x-auto text-[13px] sm:text-sm font-mono leading-relaxed text-gray-700">
-        <code>{code}</code>
-      </pre>
-    </div>
-  )
-}
+/* ------------------------------------------------------------------ */
+/*  Helper: HTTP Method Badge                                          */
+/* ------------------------------------------------------------------ */
 
 function MethodBadge({ method }: { method: string }) {
-  const colors: Record<string, string> = {
-    POST: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    GET: 'bg-blue-100 text-blue-700 border-blue-200',
-    PUT: 'bg-amber-100 text-amber-700 border-amber-200',
-    DELETE: 'bg-red-100 text-red-700 border-red-200',
+  const map: Record<string, string> = {
+    POST: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
+    GET: 'bg-blue-500/15 text-blue-400 border border-blue-500/25',
+    PUT: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
+    DELETE: 'bg-red-500/15 text-red-400 border border-red-500/25',
   }
   return (
-    <span className={`inline-block px-2 py-0.5 text-xs font-bold rounded border ${colors[method] || colors.GET}`}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 text-[11px] font-bold rounded tracking-wide ${
+        map[method] ?? map.GET
+      }`}
+    >
       {method}
     </span>
   )
 }
 
-function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+/* ------------------------------------------------------------------ */
+/*  Helper: Section Heading                                            */
+/* ------------------------------------------------------------------ */
+
+function Section({
+  id,
+  title,
+  description,
+  children,
+}: {
+  id: string
+  title: string
+  description?: string
+  children: React.ReactNode
+}) {
   return (
-    <section id={id} className="scroll-mt-24">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">{title}</h2>
+    <section id={id} className="scroll-mt-24 pb-12">
+      <h2 className="text-xl font-bold text-white mb-1">{title}</h2>
+      {description && (
+        <p className="text-sm text-gray-400 mb-6 leading-relaxed">{description}</p>
+      )}
       {children}
     </section>
   )
 }
 
-export default function DocsPage() {
-  const [activeSection, setActiveSection] = useState('getting-started')
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+/* ------------------------------------------------------------------ */
+/*  Helper: Param Table                                                */
+/* ------------------------------------------------------------------ */
 
-  const handleNavClick = (id: string) => {
-    setActiveSection(id)
-    setMobileNavOpen(false)
-    const el = document.getElementById(id)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' })
+interface Param {
+  name: string
+  type: string
+  required: boolean
+  description: string
+}
+
+function ParamTable({ params }: { params: Param[] }) {
+  return (
+    <div className="rounded-lg border border-white/[0.08] overflow-hidden mb-6">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-white/[0.04] border-b border-white/[0.08]">
+            <th className="text-left font-semibold text-gray-300 px-4 py-3">
+              Field
+            </th>
+            <th className="text-left font-semibold text-gray-300 px-4 py-3">
+              Type
+            </th>
+            <th className="text-left font-semibold text-gray-300 px-4 py-3 w-20">
+              Required
+            </th>
+            <th className="text-left font-semibold text-gray-300 px-4 py-3">
+              Description
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {params.map((p) => (
+            <tr
+              key={p.name}
+              className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors"
+            >
+              <td className="px-4 py-2.5">
+                <code className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs">
+                  {p.name}
+                </code>
+              </td>
+              <td className="px-4 py-2.5 text-gray-500 text-xs">{p.type}</td>
+              <td className="px-4 py-2.5">
+                {p.required ? (
+                  <span className="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    required
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-medium text-gray-500">optional</span>
+                )}
+              </td>
+              <td className="px-4 py-2.5 text-gray-400 text-xs leading-relaxed">
+                {p.description}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Helper: Sub-heading                                                */
+/* ------------------------------------------------------------------ */
+
+function SubHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-sm font-semibold text-white mb-3 mt-6 first:mt-0">
+      {children}
+    </h3>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main Page                                                          */
+/* ------------------------------------------------------------------ */
+
+export default function DocsPage() {
+  const [activeSection, setActiveSection] = useState('overview')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  /* Track active section on scroll */
+  useEffect(() => {
+    const ids = NAV_ITEMS.map((n) => n.id)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id)
+          }
+        }
+      },
+      { rootMargin: '-80px 0px -60% 0px', threshold: 0 },
+    )
+    for (const id of ids) {
+      const el = document.getElementById(id)
+      if (el) observer.observe(el)
     }
+    return () => observer.disconnect()
+  }, [])
+
+  const scrollTo = (id: string) => {
+    setActiveSection(id)
+    setSidebarOpen(false)
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  return (
-    <div className="min-h-screen flex flex-col bg-white text-gray-900">
-      <Header />
-
-      {/* Docs Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10">
-          <div className="flex items-center gap-3 mb-3">
-            <BookOpen className="w-6 h-6" />
-            <Badge className="bg-white/15 text-white border-white/25 hover:bg-white/20">
-              API Reference
-            </Badge>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold">ShipProof API Documentation</h1>
-          <p className="mt-2 text-emerald-100 text-sm sm:text-base max-w-2xl">
-            Integrate video proof infrastructure into your platform. Record, hash, verify, and resolve
-            — all through a single REST API.
-          </p>
+  const sidebarContent = (
+    <>
+      {/* Brand */}
+      <div className="px-5 pt-6 pb-4 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between">
+          <span className="text-base font-bold text-white tracking-tight">
+            ShipProof API
+          </span>
+          <span className="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+            v1.0.0
+          </span>
         </div>
       </div>
 
-      <div className="flex-1 flex">
-        {/* Sidebar - Desktop */}
-        <aside className="hidden lg:block w-64 border-r border-gray-200 bg-gray-50/50 flex-shrink-0">
-          <nav className="sticky top-14 py-6 px-4">
-            <ul className="space-y-1">
-              {navItems.map((item) => {
-                const Icon = item.icon
-                const isActive = activeSection === item.id
-                return (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => handleNavClick(item.id)}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                        isActive
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4 flex-shrink-0" />
-                      {item.label}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </nav>
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-4 px-3">
+        <p className="px-3 mb-2 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
+          Navigation
+        </p>
+        <ul className="space-y-0.5">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon
+            const isActive = activeSection === item.id
+            return (
+              <li key={item.id}>
+                <button
+                  onClick={() => scrollTo(item.id)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors ${
+                    isActive
+                      ? 'bg-emerald-500/10 text-emerald-400'
+                      : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.04]'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  {item.label}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
+
+      {/* CTA */}
+      <div className="p-4 border-t border-white/[0.06]">
+        <Link
+          href="/dashboard"
+          className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition-colors"
+        >
+          <Key className="w-4 h-4" />
+          Get API Key
+        </Link>
+      </div>
+    </>
+  )
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-gray-300">
+      {/* ---- Mobile header bar ---- */}
+      <div className="lg:hidden sticky top-0 z-40 flex items-center justify-between px-4 py-3 bg-gray-950/95 backdrop-blur border-b border-white/[0.06]">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+          aria-label="Open navigation"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <span className="text-sm font-semibold text-white">ShipProof API Docs</span>
+        <span className="text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+          v1.0.0
+        </span>
+      </div>
+
+      {/* ---- Sidebar overlay (mobile) ---- */}
+      {sidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        >
+          <aside
+            className="absolute left-0 top-0 bottom-0 w-[250px] bg-gray-900 border-r border-white/[0.06] flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+              <span className="text-sm font-semibold text-white">Menu</span>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1 rounded-md text-gray-400 hover:text-white transition-colors"
+                aria-label="Close navigation"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
+      {/* ---- Layout ---- */}
+      <div className="flex min-h-screen">
+        {/* Desktop sidebar */}
+        <aside className="hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-[250px] bg-gray-900 border-r border-white/[0.06] z-30">
+          {sidebarContent}
         </aside>
 
-        {/* Mobile nav dropdown */}
-        {mobileNavOpen && (
-          <div className="lg:hidden fixed inset-0 z-50 bg-black/40" onClick={() => setMobileNavOpen(false)}>
-            <div className="absolute left-0 top-0 bottom-0 w-72 bg-white border-r border-gray-200 shadow-xl" onClick={(e) => e.stopPropagation()}>
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                <span className="font-semibold text-sm text-gray-900">Navigation</span>
-                <button onClick={() => setMobileNavOpen(false)} className="text-gray-400 hover:text-gray-600">
-                  &times;
-                </button>
-              </div>
-              <nav className="py-3 px-3">
-                <ul className="space-y-1">
-                  {navItems.map((item) => {
-                    const Icon = item.icon
-                    const isActive = activeSection === item.id
-                    return (
-                      <li key={item.id}>
-                        <button
-                          onClick={() => handleNavClick(item.id)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                            isActive
-                              ? 'bg-emerald-50 text-emerald-700'
-                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                          }`}
-                        >
-                          <Icon className="w-4 h-4 flex-shrink-0" />
-                          {item.label}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </nav>
-            </div>
-          </div>
-        )}
-
         {/* Main content */}
-        <main className="flex-1 min-w-0">
-          <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8 sm:py-12">
-            {/* Mobile nav toggle */}
-            <button
-              onClick={() => setMobileNavOpen(true)}
-              className="lg:hidden mb-6 flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 w-full"
+        <main className="flex-1 lg:ml-[250px]">
+          <div className="max-w-3xl mx-auto px-5 sm:px-10 py-10 lg:py-14">
+            {/* =============================================== */}
+            {/*  1. OVERVIEW                                     */}
+            {/* =============================================== */}
+            <Section
+              id="overview"
+              title="Overview"
+              description="ShipProof provides a RESTful API for programmatic video proof creation, storage, and verification. Every video is hashed with SHA-256 for tamper-proof verification."
             >
-              <ChevronRight className="w-4 h-4" />
-              Jump to section
-            </button>
-
-            {/* 1. Getting Started */}
-            <Section id="getting-started" title="Getting Started">
-              <p className="text-gray-600 leading-relaxed mb-4">
-                Get your API key by registering your seller account. You can do this through the API
-                or via the dashboard.
-              </p>
-
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <MethodBadge method="POST" />
-                  <code className="text-sm font-mono text-gray-800 bg-gray-100 px-2 py-0.5 rounded">/api/v1/seller/register</code>
+              {/* Base URL callout */}
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-white/[0.03] border border-white/[0.06] mb-6">
+                <Terminal className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Base URL</p>
+                  <code className="text-sm font-mono text-emerald-400">
+                    https://shipproof.netlify.app/api/v1
+                  </code>
                 </div>
               </div>
 
-              <CodeBlock code={`curl -X POST https://shipproof.netlify.app/api/v1/seller/register \\
-  -H "Content-Type: application/json" \\
-  -d '{"name": "Acme Corp", "email": "ops@acme.com"}'`} />
+              <p className="text-sm text-gray-400 leading-relaxed mb-3">
+                All API responses are returned as JSON. A successful request follows this format:
+              </p>
+              <CodeBlock
+                language="json"
+                code={`{
+  "success": true,
+  "data": { ... }
+}`}
+              />
 
-              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm text-amber-800">
-                  <strong>Note:</strong> Your API key will be returned in the response. Keep it secure. Do not
-                  expose it in client-side code or public repositories.
+              <p className="text-sm text-gray-400 leading-relaxed mt-4 mb-3">
+                Errors use a similar structure:
+              </p>
+              <CodeBlock
+                language="json"
+                code={`{
+  "success": false,
+  "error": "Human-readable error message"
+}`}
+              />
+
+              <div className="mt-6 p-4 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04]">
+                <p className="text-sm text-emerald-300 font-medium mb-1">Quick start</p>
+                <ol className="text-sm text-gray-400 list-decimal list-inside space-y-1">
+                  <li>Register a seller account to receive your API key</li>
+                  <li>Upload a video with an order ID and optional buyer email</li>
+                  <li>Share the verification URL with the buyer</li>
+                  <li>Check status or retrieve usage statistics at any time</li>
+                </ol>
+              </div>
+            </Section>
+
+            {/* =============================================== */}
+            {/*  2. AUTHENTICATION                               */}
+            {/* =============================================== */}
+            <Section
+              id="authentication"
+              title="Authentication"
+              description="All endpoints except /seller/register require a valid API key. Pass your key using one of the two methods below."
+            >
+              <SubHeading>Method 1: X-API-Key Header</SubHeading>
+              <CodeBlock
+                language="http"
+                code={`X-API-Key: sp_live_abc123def456...`}
+              />
+
+              <SubHeading>Method 2: Authorization Bearer Header</SubHeading>
+              <CodeBlock
+                language="http"
+                code={`Authorization: Bearer sp_live_abc123def456...`}
+              />
+
+              <SubHeading>Example Request</SubHeading>
+              <CodeBlock
+                language="bash"
+                code={`curl https://shipproof.netlify.app/api/v1/video/ABC12345 \\
+  -H "Authorization: Bearer sp_live_abc123def456..."`}
+              />
+
+              <div className="mt-6 p-4 rounded-lg border border-amber-500/15 bg-amber-500/[0.04]">
+                <p className="text-sm text-amber-300">
+                  <strong>Security warning:</strong> Never expose your API key in client-side
+                  JavaScript or public repositories. Keys prefixed with{' '}
+                  <code className="bg-amber-500/10 px-1.5 py-0.5 rounded text-xs">
+                    sp_live_
+                  </code>{' '}
+                  have full production access.
                 </p>
               </div>
             </Section>
 
-            {/* 2. Authentication */}
-            <Section id="authentication" title="Authentication">
-              <p className="text-gray-600 leading-relaxed mb-4">
-                All API requests require authentication via Bearer token or a custom header. Include your
-                API key in every request.
+            {/* =============================================== */}
+            {/*  3. REGISTER SELLER                              */}
+            {/* =============================================== */}
+            <Section id="register-seller" title="Register Seller">
+              {/* Endpoint heading */}
+              <div className="flex items-center gap-2 mb-4">
+                <MethodBadge method="POST" />
+                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">
+                  /api/v1/seller/register
+                </code>
+              </div>
+
+              <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                Create a new seller account and receive your API key. If an account with the
+                provided email already exists, the existing credentials are returned.
               </p>
 
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Method 1: Authorization Header (Recommended)</h3>
-              <CodeBlock code={`Authorization: Bearer sp_live_abc123`} />
+              <SubHeading>Request Body</SubHeading>
+              <ParamTable
+                params={[
+                  {
+                    name: 'name',
+                    type: 'string',
+                    required: true,
+                    description: 'Your company or personal name',
+                  },
+                  {
+                    name: 'email',
+                    type: 'string',
+                    required: true,
+                    description: 'Valid email address for the account',
+                  },
+                  {
+                    name: 'webhook_url',
+                    type: 'string',
+                    required: false,
+                    description: 'URL to receive event notifications (optional)',
+                  },
+                ]}
+              />
 
-              <h3 className="text-base font-semibold text-gray-900 mt-6 mb-3">Method 2: Custom Header</h3>
-              <CodeBlock code={`x-api-key: sp_live_abc123`} />
+              <SubHeading>Example</SubHeading>
+              <CodeBlock
+                language="bash"
+                code={`curl -X POST https://shipproof.netlify.app/api/v1/seller/register \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Acme Corp",
+    "email": "ops@acme.com",
+    "webhook_url": "https://acme.com/api/shipproof-webhook"
+  }'`}
+              />
 
-              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <p className="text-sm text-amber-800">
-                  <strong>Security:</strong> API keys prefixed with <code className="bg-amber-100 px-1 rounded">sp_live_</code> are
-                  production keys. Use <code className="bg-amber-100 px-1 rounded">sp_test_</code> keys for development and testing.
+              <SubHeading>Response (201 Created)</SubHeading>
+              <CodeBlock
+                language="json"
+                code={`{
+  "success": true,
+  "data": {
+    "id": "clx_8f14e45f",
+    "name": "Acme Corp",
+    "email": "ops@acme.com",
+    "api_key": "sp_live_a1b2c3d4e5f6g7h8i9j0",
+    "plan": "free",
+    "created_at": "2024-01-15T10:30:00Z"
+  }
+}`}
+              />
+
+              <div className="mt-6 p-4 rounded-lg border border-amber-500/15 bg-amber-500/[0.04]">
+                <p className="text-sm text-amber-300">
+                  <strong>Note:</strong> Save your API key immediately after registration. It
+                  cannot be retrieved again. If you lose it, contact support to request a new
+                  key.
                 </p>
               </div>
             </Section>
 
-            {/* 3. Upload Video */}
+            {/* =============================================== */}
+            {/*  4. UPLOAD VIDEO                                 */}
+            {/* =============================================== */}
             <Section id="upload-video" title="Upload Video">
               <div className="flex items-center gap-2 mb-4">
                 <MethodBadge method="POST" />
-                <code className="text-sm font-mono text-gray-800 bg-gray-100 px-2 py-0.5 rounded">/api/v1/video</code>
+                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">
+                  /api/v1/video
+                </code>
               </div>
 
-              <p className="text-gray-600 leading-relaxed mb-4">
-                Upload a packing video associated with an order. Supports both JSON (base64-encoded) and
-                multipart/form-data (file upload) methods.
+              <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                Upload a packing or fulfillment video associated with an order. The video is
+                hashed with SHA-256 for tamper-proof verification. You can provide the video as
+                a base64-encoded string or as an external URL (e.g. S3). Optionally, an
+                email notification with a verification link is sent to the buyer.
               </p>
 
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Parameters</h3>
-              <div className="rounded-lg border border-gray-200 overflow-hidden mb-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-700">Field</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Type</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Required</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Description</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell><code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">order_id</code></TableCell>
-                      <TableCell className="text-gray-500">string</TableCell>
-                      <TableCell><Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50 text-xs">Yes</Badge></TableCell>
-                      <TableCell className="text-gray-600">Your internal order ID</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">buyer_email</code></TableCell>
-                      <TableCell className="text-gray-500">string</TableCell>
-                      <TableCell>No</TableCell>
-                      <TableCell className="text-gray-600">Buyer&apos;s email for notification</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">video_data</code></TableCell>
-                      <TableCell className="text-gray-500">string (base64)</TableCell>
-                      <TableCell><Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50 text-xs">Yes*</Badge></TableCell>
-                      <TableCell className="text-gray-600">Base64-encoded video (JSON mode)</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">video_file</code></TableCell>
-                      <TableCell className="text-gray-500">File</TableCell>
-                      <TableCell><Badge variant="outline" className="text-emerald-700 border-emerald-200 bg-emerald-50 text-xs">Yes*</Badge></TableCell>
-                      <TableCell className="text-gray-600">Video file (FormData mode)</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">metadata</code></TableCell>
-                      <TableCell className="text-gray-500">object</TableCell>
-                      <TableCell>No</TableCell>
-                      <TableCell className="text-gray-600">Additional key-value metadata</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-              <p className="text-xs text-gray-400 mb-4">* Provide either video_data (JSON) or video_file (FormData).</p>
+              <SubHeading>Request Body</SubHeading>
+              <ParamTable
+                params={[
+                  {
+                    name: 'order_id',
+                    type: 'string',
+                    required: true,
+                    description: 'Your internal order identifier',
+                  },
+                  {
+                    name: 'buyer_email',
+                    type: 'string',
+                    required: false,
+                    description:
+                      'Email address of the buyer; a verification link will be sent automatically',
+                  },
+                  {
+                    name: 'video_url',
+                    type: 'string',
+                    required: false,
+                    description:
+                      'Public URL to the video file (e.g. S3, GCS). Alternative to video_data.',
+                  },
+                  {
+                    name: 'video_data',
+                    type: 'string',
+                    required: false,
+                    description:
+                      'Base64-encoded video file content. Alternative to video_url.',
+                  },
+                  {
+                    name: 'video_hash',
+                    type: 'string',
+                    required: false,
+                    description:
+                      'Pre-computed SHA-256 hash of the video. Auto-computed if omitted.',
+                  },
+                  {
+                    name: 'send_email',
+                    type: 'boolean',
+                    required: false,
+                    description:
+                      'Whether to send a verification email to the buyer (default: true)',
+                  },
+                ]}
+              />
 
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Example Request (JSON)</h3>
-              <CodeBlock code={`curl -X POST https://shipproof.netlify.app/api/v1/video \\
-  -H "Authorization: Bearer sp_live_abc123" \\
+              <p className="text-xs text-gray-500 mb-5">
+                Provide either <code className="text-gray-400">video_data</code> (base64) or{' '}
+                <code className="text-gray-400">video_url</code> (external link). If both are
+                omitted the request will fail.
+              </p>
+
+              <SubHeading>cURL Example (S3 URL)</SubHeading>
+              <CodeBlock
+                language="bash"
+                code={`curl -X POST https://shipproof.netlify.app/api/v1/video \\
+  -H "Authorization: Bearer sp_live_a1b2c3d4e5f6g7h8i9j0" \\
   -H "Content-Type: application/json" \\
   -d '{
     "order_id": "ORD-2024-78901",
     "buyer_email": "customer@example.com",
-    "video_data": "<base64-encoded-video>"
-  }'`} />
+    "video_url": "https://s3.amazonaws.com/my-bucket/packing-vid.mp4",
+    "send_email": true
+  }'`}
+              />
 
-              <h3 className="text-base font-semibold text-gray-900 mt-6 mb-3">Response</h3>
-              <JsonBlock code={`{
-  "success": true,
-  "data": {
-    "id": "vid_abc123",
-    "order_id": "ORD-2024-78901",
-    "verification_url": "https://yourdomain.com/verify/ABC123",
-    "video_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb924...",
-    "status": "recorded",
-    "created_at": "2024-01-15T10:30:00Z"
-  }
-}`} />
-            </Section>
+              <SubHeading>Python Example</SubHeading>
+              <CodeBlock
+                language="python"
+                code={`import requests
 
-            {/* 4. Verify Video */}
-            <Section id="verify-video" title="Verify Video">
-              <div className="flex items-center gap-2 mb-4">
-                <MethodBadge method="GET" />
-                <code className="text-sm font-mono text-gray-800 bg-gray-100 px-2 py-0.5 rounded">/api/v1/verify/:code</code>
-              </div>
+API_KEY = "sp_live_a1b2c3d4e5f6g7h8i9j0"
+BASE_URL = "https://shipproof.netlify.app/api/v1"
 
-              <p className="text-gray-600 leading-relaxed mb-4">
-                Returns verification data for a video, including the video hash, status, and buyer
-                confirmation details (if confirmed).
-              </p>
-
-              <CodeBlock code={`curl https://shipproof.netlify.app/api/v1/verify/ABC123 \\
-  -H "Authorization: Bearer sp_live_abc123"`} />
-
-              <h3 className="text-base font-semibold text-gray-900 mt-6 mb-3">Response</h3>
-              <JsonBlock code={`{
-  "success": true,
-  "data": {
-    "code": "ABC123",
-    "order_id": "ORD-2024-78901",
-    "video_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb924...",
-    "status": "recorded",
-    "package_condition": null,
-    "buyer_comment": null,
-    "created_at": "2024-01-15T10:30:00Z",
-    "confirmed_at": null
-  }
-}`} />
-            </Section>
-
-            {/* 5. Confirm Receipt */}
-            <Section id="confirm-receipt" title="Confirm Receipt (Buyer)">
-              <div className="flex items-center gap-2 mb-4">
-                <MethodBadge method="POST" />
-                <code className="text-sm font-mono text-gray-800 bg-gray-100 px-2 py-0.5 rounded">/api/v1/verify/:code</code>
-              </div>
-
-              <p className="text-gray-600 leading-relaxed mb-4">
-                Called by the buyer to confirm package condition upon delivery. This endpoint is
-                typically accessed through the verification link.
-              </p>
-
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Request Body</h3>
-              <JsonBlock code={`{
-  "package_condition": "perfect",
-  "buyer_comment": "Great condition"
-}`} />
-
-              <h3 className="text-base font-semibold text-gray-900 mt-6 mb-3">Valid Conditions</h3>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {['perfect', 'damaged', 'wrong_item', 'missing_parts'].map((condition) => (
-                  <code
-                    key={condition}
-                    className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded text-xs font-mono"
-                  >
-                    {condition}
-                  </code>
-                ))}
-              </div>
-
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Response</h3>
-              <JsonBlock code={`{
-  "success": true,
-  "data": {
-    "code": "ABC123",
-    "status": "confirmed",
-    "package_condition": "perfect",
-    "buyer_comment": "Great condition",
-    "confirmed_at": "2024-01-16T14:20:00Z"
-  }
-}`} />
-            </Section>
-
-            {/* 6. List Videos */}
-            <Section id="list-videos" title="List Videos">
-              <div className="flex items-center gap-2 mb-4">
-                <MethodBadge method="GET" />
-                <code className="text-sm font-mono text-gray-800 bg-gray-100 px-2 py-0.5 rounded">/api/v1/videos</code>
-              </div>
-
-              <p className="text-gray-600 leading-relaxed mb-4">
-                Returns a paginated list of videos for the authenticated seller. Supports filtering by
-                status and order ID.
-              </p>
-
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Query Parameters</h3>
-              <div className="rounded-lg border border-gray-200 overflow-hidden mb-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-700">Parameter</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Type</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Description</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell><code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">page</code></TableCell>
-                      <TableCell className="text-gray-500">integer</TableCell>
-                      <TableCell className="text-gray-600">Page number (default: 1)</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">limit</code></TableCell>
-                      <TableCell className="text-gray-500">integer</TableCell>
-                      <TableCell className="text-gray-600">Items per page (default: 20, max: 100)</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">status</code></TableCell>
-                      <TableCell className="text-gray-500">string</TableCell>
-                      <TableCell className="text-gray-600">Filter by status: recorded, confirmed</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">order_id</code></TableCell>
-                      <TableCell className="text-gray-500">string</TableCell>
-                      <TableCell className="text-gray-600">Filter by order ID</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-
-              <CodeBlock code={`curl "https://shipproof.netlify.app/api/v1/videos?page=1&limit=20&status=recorded" \\
-  -H "Authorization: Bearer sp_live_abc123"`} />
-
-              <h3 className="text-base font-semibold text-gray-900 mt-6 mb-3">Response</h3>
-              <JsonBlock code={`{
-  "success": true,
-  "data": {
-    "videos": [
-      {
-        "id": "vid_abc123",
+response = requests.post(
+    f"{BASE_URL}/video",
+    headers={
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json",
+    },
+    json={
         "order_id": "ORD-2024-78901",
-        "status": "recorded",
-        "verification_code": "ABC123",
-        "created_at": "2024-01-15T10:30:00Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 47,
-      "total_pages": 3
-    }
-  }
-}`} />
-            </Section>
+        "buyer_email": "customer@example.com",
+        "video_url": "https://s3.amazonaws.com/my-bucket/packing-vid.mp4",
+        "send_email": True,
+    },
+)
 
-            {/* 7. Get Video Details */}
-            <Section id="get-video" title="Get Video Details">
-              <div className="flex items-center gap-2 mb-4">
-                <MethodBadge method="GET" />
-                <code className="text-sm font-mono text-gray-800 bg-gray-100 px-2 py-0.5 rounded">/api/v1/video/:id</code>
-              </div>
+print(response.status_code)
+print(response.json())`}
+              />
 
-              <p className="text-gray-600 leading-relaxed mb-4">
-                Returns full details for a single video by its ID.
-              </p>
-
-              <CodeBlock code={`curl https://shipproof.netlify.app/api/v1/video/vid_abc123 \\
-  -H "Authorization: Bearer sp_live_abc123"`} />
-
-              <h3 className="text-base font-semibold text-gray-900 mt-6 mb-3">Response</h3>
-              <JsonBlock code={`{
+              <SubHeading>Response (201 Created)</SubHeading>
+              <CodeBlock
+                language="json"
+                code={`{
   "success": true,
   "data": {
-    "id": "vid_abc123",
+    "video_id": "clx_9e2b7f1c",
+    "unique_code": "ABC12345",
+    "verification_url": "https://shipproof.netlify.app/v/ABC12345",
     "order_id": "ORD-2024-78901",
     "buyer_email": "customer@example.com",
-    "verification_code": "ABC123",
-    "verification_url": "https://yourdomain.com/verify/ABC123",
-    "video_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb924...",
-    "status": "confirmed",
-    "package_condition": "perfect",
-    "buyer_comment": "Great condition",
-    "created_at": "2024-01-15T10:30:00Z",
-    "confirmed_at": "2024-01-16T14:20:00Z"
+    "video_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "status": "recorded",
+    "email_sent": true,
+    "created_at": "2024-01-15T10:30:00Z"
   }
-}`} />
+}`}
+              />
             </Section>
 
-            {/* 8. Rate Limits */}
-            <Section id="rate-limits" title="Rate Limits">
-              <p className="text-gray-600 leading-relaxed mb-4">
-                Rate limits are enforced per API key. The limits depend on your plan. Exceeding limits
-                returns a <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs text-red-700">429</code> status code.
-              </p>
-
-              <div className="rounded-lg border border-gray-200 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-700">Plan</TableHead>
-                      <TableHead className="font-semibold text-gray-700 text-right">Videos/Month</TableHead>
-                      <TableHead className="font-semibold text-gray-700 text-right">Videos/Day</TableHead>
-                      <TableHead className="font-semibold text-gray-700 text-right">Videos/Hour</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell className="font-medium">Free</TableCell>
-                      <TableCell className="text-right text-gray-500">5</TableCell>
-                      <TableCell className="text-right text-gray-500">2</TableCell>
-                      <TableCell className="text-right text-gray-500">1</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">Pro</TableCell>
-                      <TableCell className="text-right text-gray-500">200</TableCell>
-                      <TableCell className="text-right text-gray-500">50</TableCell>
-                      <TableCell className="text-right text-gray-500">10</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">Business</TableCell>
-                      <TableCell className="text-right text-gray-500">5,000</TableCell>
-                      <TableCell className="text-right text-gray-500">500</TableCell>
-                      <TableCell className="text-right text-gray-500">100</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">
-                        Enterprise
-                        <Badge className="ml-2 bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px]">Custom</Badge>
-                      </TableCell>
-                      <TableCell className="text-right text-gray-500">Unlimited</TableCell>
-                      <TableCell className="text-right text-gray-500">Unlimited</TableCell>
-                      <TableCell className="text-right text-gray-500">Unlimited</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+            {/* =============================================== */}
+            {/*  5. VIDEO STATUS                                 */}
+            {/* =============================================== */}
+            <Section id="video-status" title="Video Status">
+              <div className="flex items-center gap-2 mb-4">
+                <MethodBadge method="GET" />
+                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">
+                  /api/v1/video/:code
+                </code>
               </div>
 
-              <p className="mt-4 text-xs text-gray-400">
-                Rate limit headers are included in every response: <code className="bg-gray-100 px-1 rounded">X-RateLimit-Limit</code>,{' '}
-                <code className="bg-gray-100 px-1 rounded">X-RateLimit-Remaining</code>,{' '}
-                <code className="bg-gray-100 px-1 rounded">X-RateLimit-Reset</code>.
-              </p>
-            </Section>
-
-            {/* 9. Error Codes */}
-            <Section id="error-codes" title="Error Codes">
-              <p className="text-gray-600 leading-relaxed mb-4">
-                Errors return a consistent JSON structure with a code and message.
+              <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                Retrieve the current status and verification details for a video by its unique
+                code. Returns buyer confirmation state, package condition, timestamps, and the
+                tamper-proof SHA-256 hash.
               </p>
 
-              <div className="rounded-lg border border-gray-200 overflow-hidden mb-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="font-semibold text-gray-700">Code</TableHead>
-                      <TableHead className="font-semibold text-gray-700">HTTP</TableHead>
-                      <TableHead className="font-semibold text-gray-700">Description</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell><code className="text-red-700 bg-red-50 px-1.5 py-0.5 rounded text-xs font-semibold">UNAUTHORIZED</code></TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs border-gray-300">401</Badge></TableCell>
-                      <TableCell className="text-gray-600">Missing or invalid API key</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-red-700 bg-red-50 px-1.5 py-0.5 rounded text-xs font-semibold">INVALID_KEY</code></TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs border-gray-300">401</Badge></TableCell>
-                      <TableCell className="text-gray-600">API key not found</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded text-xs font-semibold">VALIDATION_ERROR</code></TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs border-gray-300">400</Badge></TableCell>
-                      <TableCell className="text-gray-600">Missing or invalid request fields</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded text-xs font-semibold">RATE_LIMITED</code></TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs border-gray-300">429</Badge></TableCell>
-                      <TableCell className="text-gray-600">Plan limit exceeded</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded text-xs font-semibold">NOT_FOUND</code></TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs border-gray-300">404</Badge></TableCell>
-                      <TableCell className="text-gray-600">Video or resource not found</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell><code className="text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded text-xs font-semibold">INTERNAL_ERROR</code></TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs border-gray-300">500</Badge></TableCell>
-                      <TableCell className="text-gray-600">Server error</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
+              <SubHeading>Path Parameters</SubHeading>
+              <ParamTable
+                params={[
+                  {
+                    name: 'code',
+                    type: 'string',
+                    required: true,
+                    description:
+                      'The unique verification code returned when the video was uploaded (e.g. ABC12345)',
+                  },
+                ]}
+              />
 
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Error Response Format</h3>
-              <JsonBlock code={`{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "order_id is required"
-  }
-}`} />
-            </Section>
+              <SubHeading>Example</SubHeading>
+              <CodeBlock
+                language="bash"
+                code={`curl https://shipproof.netlify.app/api/v1/video/ABC12345 \\
+  -H "Authorization: Bearer sp_live_a1b2c3d4e5f6g7h8i9j0"`}
+              />
 
-            {/* 10. Webhooks */}
-            <Section id="webhooks" title="Webhooks">
-              <Badge className="bg-amber-100 text-amber-700 border-amber-200 mb-4">Coming Soon</Badge>
-
-              <p className="text-gray-600 leading-relaxed mb-4">
-                Webhooks allow you to receive real-time notifications when events occur, such as buyer
-                confirmations, disputes, or video processing completion. This feature is currently on
-                the roadmap and will be available soon.
-              </p>
-
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Expected Events</h3>
-              <div className="space-y-2 mb-6">
-                {[
-                  { event: 'video.recorded', desc: 'A new video has been uploaded and hashed' },
-                  { event: 'video.confirmed', desc: 'Buyer has confirmed package receipt' },
-                  { event: 'video.disputed', desc: 'Buyer has reported a damaged or incorrect package' },
-                  { event: 'video.expired', desc: 'Verification link has expired without confirmation' },
-                ].map((item) => (
-                  <div key={item.event} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <code className="text-sm font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded flex-shrink-0">
-                      {item.event}
-                    </code>
-                    <span className="text-sm text-gray-600">{item.desc}</span>
-                  </div>
-                ))}
-              </div>
-
-              <h3 className="text-base font-semibold text-gray-900 mb-3">Expected Payload Format</h3>
-              <JsonBlock code={`{
-  "event": "video.confirmed",
-  "timestamp": "2024-01-16T14:20:00Z",
+              <SubHeading>Response (200 OK)</SubHeading>
+              <CodeBlock
+                language="json"
+                code={`{
+  "success": true,
   "data": {
-    "video_id": "vid_abc123",
+    "id": "clx_9e2b7f1c",
     "order_id": "ORD-2024-78901",
-    "verification_code": "ABC123",
+    "buyer_email": "customer@example.com",
+    "unique_code": "ABC12345",
+    "status": "confirmed",
+    "verification_url": "https://shipproof.netlify.app/v/ABC12345",
+    "video_hash": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "buyer_confirmed": true,
+    "buyer_confirmed_at": "2024-01-16T14:20:00Z",
     "package_condition": "perfect",
-    "buyer_comment": "Great condition"
+    "buyer_comment": "Arrived in great condition",
+    "created_at": "2024-01-15T10:30:00Z"
   }
-}`} />
+}`}
+              />
 
-              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Sign up for early access:</strong> Contact{' '}
-                  <a href="mailto:sales@shipproof.com" className="underline font-medium">
-                    sales@shipproof.com
-                  </a>{' '}
-                  to be notified when webhooks launch.
+              <div className="mt-6 p-4 rounded-lg border border-white/[0.06] bg-white/[0.02]">
+                <p className="text-sm text-gray-400">
+                  <strong className="text-gray-300">Status values:</strong>{' '}
+                  <code className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs">
+                    recorded
+                  </code>{' '}
+                  &mdash; video uploaded &bull;{' '}
+                  <code className="text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded text-xs">
+                    sent
+                  </code>{' '}
+                  &mdash; email delivered &bull;{' '}
+                  <code className="text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded text-xs">
+                    viewed
+                  </code>{' '}
+                  &mdash; buyer opened link &bull;{' '}
+                  <code className="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded text-xs">
+                    confirmed
+                  </code>{' '}
+                  &mdash; buyer confirmed receipt
                 </p>
               </div>
             </Section>
 
-            {/* Bottom CTA */}
-            <div className="mt-16 pt-12 border-t border-gray-200">
-              <div className="text-center p-8 bg-gray-50 rounded-xl">
-                <h3 className="text-lg font-bold text-gray-900">Need help?</h3>
-                <p className="mt-2 text-gray-500 text-sm max-w-md mx-auto">
-                  If you have questions about the API or need integration support, our team is ready to help.
+            {/* =============================================== */}
+            {/*  6. USAGE STATS                                  */}
+            {/* =============================================== */}
+            <Section id="usage-stats" title="Usage Stats">
+              <div className="flex items-center gap-2 mb-4">
+                <MethodBadge method="GET" />
+                <code className="text-sm font-mono text-gray-300 bg-white/[0.04] px-2.5 py-1 rounded-md">
+                  /api/v1/seller/:id/usage
+                </code>
+              </div>
+
+              <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                Retrieve usage statistics for a seller account. Returns the number of videos
+                uploaded this month, total uploads, confirmed videos, and current plan.
+              </p>
+
+              <SubHeading>Path Parameters</SubHeading>
+              <ParamTable
+                params={[
+                  {
+                    name: 'id',
+                    type: 'string',
+                    required: true,
+                    description:
+                      'The seller ID returned during registration (e.g. clx_8f14e45f)',
+                  },
+                ]}
+              />
+
+              <SubHeading>Example</SubHeading>
+              <CodeBlock
+                language="bash"
+                code={`curl https://shipproof.netlify.app/api/v1/seller/clx_8f14e45f/usage \\
+  -H "Authorization: Bearer sp_live_a1b2c3d4e5f6g7h8i9j0"`}
+              />
+
+              <SubHeading>Response (200 OK)</SubHeading>
+              <CodeBlock
+                language="json"
+                code={`{
+  "success": true,
+  "data": {
+    "seller_id": "clx_8f14e45f",
+    "plan": "business",
+    "videos_this_month": 142,
+    "total_videos": 3847,
+    "confirmed_videos": 3201,
+    "disputed_videos": 23,
+    "month": "2024-01"
+  }
+}`}
+              />
+            </Section>
+
+            {/* =============================================== */}
+            {/*  7. ERROR CODES                                  */}
+            {/* =============================================== */}
+            <Section
+              id="error-codes"
+              title="Error Codes"
+              description="All errors return a consistent JSON structure. The HTTP status code indicates the category of the error."
+            >
+              <div className="rounded-lg border border-white/[0.08] overflow-hidden mb-6">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-white/[0.04] border-b border-white/[0.08]">
+                      <th className="text-left font-semibold text-gray-300 px-4 py-3 w-28">
+                        Status
+                      </th>
+                      <th className="text-left font-semibold text-gray-300 px-4 py-3">
+                        Description
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      {
+                        code: 200,
+                        label: 'Success',
+                        desc: 'The request was completed successfully.',
+                        color: 'text-emerald-400',
+                      },
+                      {
+                        code: 400,
+                        label: 'Bad Request',
+                        desc: 'Missing or invalid request parameters.',
+                        color: 'text-amber-400',
+                      },
+                      {
+                        code: 401,
+                        label: 'Unauthorized',
+                        desc: 'Missing, invalid, or expired API key.',
+                        color: 'text-red-400',
+                      },
+                      {
+                        code: 403,
+                        label: 'Forbidden',
+                        desc: 'Authenticated but not authorized for the requested resource.',
+                        color: 'text-orange-400',
+                      },
+                      {
+                        code: 404,
+                        label: 'Not Found',
+                        desc: 'The requested endpoint or resource does not exist.',
+                        color: 'text-blue-400',
+                      },
+                      {
+                        code: 429,
+                        label: 'Rate Limited',
+                        desc: 'Too many requests. Slow down and retry after the indicated cooldown.',
+                        color: 'text-purple-400',
+                      },
+                      {
+                        code: 500,
+                        label: 'Internal Server Error',
+                        desc: 'An unexpected error occurred. Please retry or contact support.',
+                        color: 'text-red-400',
+                      },
+                    ].map((row) => (
+                      <tr
+                        key={row.code}
+                        className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors"
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-xs font-bold bg-white/[0.06] px-2 py-0.5 rounded ${row.color}`}
+                            >
+                              {row.code}
+                            </span>
+                            <span className="text-xs text-gray-400">{row.label}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs leading-relaxed">
+                          {row.desc}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <SubHeading>Error Response Format</SubHeading>
+              <CodeBlock
+                language="json"
+                code={`{
+  "success": false,
+  "error": "order_id is required"
+}`}
+              />
+
+              <div className="mt-4 p-4 rounded-lg border border-white/[0.06] bg-white/[0.02]">
+                <p className="text-sm text-gray-400">
+                  <strong className="text-gray-300">Rate limiting:</strong> By default the API
+                  allows 60 requests per minute per API key. The{' '}
+                  <code className="text-gray-300 bg-white/[0.06] px-1.5 py-0.5 rounded text-xs">
+                    X-RateLimit-Remaining
+                  </code>{' '}
+                  and{' '}
+                  <code className="text-gray-300 bg-white/[0.06] px-1.5 py-0.5 rounded text-xs">
+                    X-RateLimit-Reset
+                  </code>{' '}
+                  headers are included in every response.
                 </p>
-                <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button asChild size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white">
-                    <a href="mailto:sales@shipproof.com">Contact Sales</a>
-                  </Button>
-                  <Button asChild variant="outline" size="sm">
-                    <Link href="/enterprise">
-                      View Enterprise Page
-                      <ChevronRight className="w-4 h-4 ml-1" />
-                    </Link>
-                  </Button>
-                </div>
+              </div>
+            </Section>
+
+            {/* ---- Bottom CTA ---- */}
+            <div className="mt-12 pt-10 border-t border-white/[0.06]">
+              <div className="text-center p-8 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+                <h3 className="text-lg font-bold text-white mb-2">Ready to integrate?</h3>
+                <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
+                  Get your API key and start creating tamper-proof video verifications in
+                  minutes.
+                </p>
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition-colors"
+                >
+                  Get API Key
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
             </div>
           </div>
