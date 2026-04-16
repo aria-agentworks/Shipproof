@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 
-// Prisma v6 natively supports libsql:// URLs (no adapter needed)
-// .env has DATABASE_URL pointing to Turso
+// Prisma v6 natively supports libsql:// URLs via @libsql/client
+// DATABASE_URL in .env / Netlify env vars points to Turso
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
