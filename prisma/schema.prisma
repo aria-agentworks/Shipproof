@@ -22,10 +22,15 @@ model Video {
   recordedAt       DateTime  @default(now())
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+  sellerId         String?
+  videoHash        String?   // SHA-256 hash for tamper-proof verification
+
+  seller           Seller?   @relation(fields: [sellerId], references: [id])
 
   @@index([orderId])
   @@index([buyerEmail])
   @@index([status])
+  @@index([sellerId])
 }
 
 model Payment {
@@ -42,4 +47,20 @@ model Payment {
 
   @@index([planKey])
   @@index([status])
+}
+
+model Seller {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  apiKey    String   @unique
+  plan      String   @default("free") // free, pro, business, enterprise
+  webhookUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  videos Video[]
+
+  @@index([apiKey])
+  @@index([plan])
 }

@@ -329,6 +329,8 @@ export default function HomePage() {
           </div>
           <div className="mt-6 pt-6 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex gap-6 text-xs">
+              <Link href="/enterprise" className="hover:text-gray-300 cursor-pointer transition-colors">Enterprise</Link>
+              <Link href="/docs" className="hover:text-gray-300 cursor-pointer transition-colors">API Docs</Link>
               <Link href="/pricing" className="hover:text-gray-300 cursor-pointer transition-colors">Pricing</Link>
               <span className="hover:text-gray-300 cursor-pointer transition-colors">Privacy</span>
               <span className="hover:text-gray-300 cursor-pointer transition-colors">Terms</span>
