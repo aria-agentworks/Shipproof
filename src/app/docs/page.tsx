@@ -245,6 +245,8 @@ function ApiKeyGenerator() {
       const data = await res.json()
 
       if (res.ok && data.data?.api_key) {
+        // Store API key in cookie for dashboard/record page auth
+        document.cookie = `sp_api_key=${encodeURIComponent(data.data.api_key)}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Strict`
         setResult(data.data)
       } else {
         setError(data.error || 'Failed to generate API key')

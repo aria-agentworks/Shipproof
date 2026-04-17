@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { formatDate } from '@/lib/utils-shipproof'
 import {
   Video,
+  Key,
   Mail,
   Copy,
   ExternalLink,
@@ -29,6 +30,7 @@ import {
   ChevronUp,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface VideoData {
   id: string
@@ -51,17 +53,44 @@ const CONDITION_CONFIG: Record<string, { label: string; icon: typeof ThumbsUp; c
   missing_parts: { label: 'Missing Parts', icon: HelpCircle, color: 'text-yellow-700', bg: 'bg-yellow-100' },
 }
 
+function getApiKey(): string | null {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(/(?:^|;\s*)sp_api_key=([^;]*)/)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
 export default function DashboardPage() {
+  const router = useRouter()
   const [videos, setVideos] = useState<VideoData[]>([])
   const [loading, setLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(true)
   const [sendingId, setSendingId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [apiKeyInput, setApiKeyInput] = useState('')
   const { toast } = useToast()
 
   useEffect(() => {
-    fetchVideos()
+    if (!getApiKey()) {
+      setAuthLoading(false)
+      setLoading(false)
+    } else {
+      fetchVideos()
+      setAuthLoading(false)
+    }
   }, [])
+
+  const handleLogin = () => {
+    if (!apiKeyInput.trim()) return
+    document.cookie = `sp_api_key=${encodeURIComponent(apiKeyInput.trim())}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Strict`
+    setApiKeyInput('')
+    fetchVideos()
+  }
+
+  const handleLogout = () => {
+    document.cookie = 'sp_api_key=; path=/; max-age=0'
+    setVideos([])
+  }
 
   const fetchVideos = async () => {
     try {
@@ -134,6 +163,50 @@ export default function DashboardPage() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
 
+      {/* Auth gate */}
+      {!getApiKey() && !authLoading && (
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto">
+                <Key className="w-8 h-8 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Sign in to Dashboard</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Enter your ShipProof API key to access your videos.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <input
+                  type="password"
+                  placeholder="sp_live_..."
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                  className="w-full h-11 px-4 rounded-lg border border-gray-200 bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
+                <Button
+                  onClick={handleLogin}
+                  disabled={!apiKeyInput.trim()}
+                  className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  Sign In
+                </Button>
+              </div>
+              <p className="text-xs text-gray-400">
+                Don&apos;t have a key?{' '}
+                <Link href="/docs" className="text-emerald-600 hover:underline font-medium">
+                  Get one free on the Docs page
+                </Link>
+              </p>
+            </CardContent>
+          </Card>
+        </main>
+      )}
+
+      {/* Authenticated content */}
+      {getApiKey() && (
       <main className="flex-1 p-4 pb-24">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Back link */}
@@ -147,12 +220,17 @@ export default function DashboardPage() {
               <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
               <p className="text-sm text-gray-500">All your packing videos</p>
             </div>
-            <Link href="/record">
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white h-11">
-                <Video className="w-4 h-4 mr-2" />
-                Record New
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="text-gray-500 hover:text-red-600 text-xs">
+                Sign Out
               </Button>
-            </Link>
+              <Link href="/record">
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white h-11">
+                  <Video className="w-4 h-4 mr-2" />
+                  Record New
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Stats */}
@@ -450,6 +528,7 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+      )}
     </div>
   )
 }

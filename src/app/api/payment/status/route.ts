@@ -1,9 +1,14 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { authenticateRequest } from '@/lib/api-auth'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const auth = await authenticateRequest(request)
+    if (auth instanceof NextResponse) return auth
+
     const payments = await db.payment.findMany({
+      where: { sellerId: auth.id },
       orderBy: { createdAt: 'desc' },
       take: 10,
     })

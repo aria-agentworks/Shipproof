@@ -28,6 +28,15 @@ export async function authenticateRequest(request: NextRequest): Promise<Authent
     apiKey = authHeader.substring(7)
   }
 
+  // Support cookie-based auth (for web app dashboard/record pages)
+  if (!apiKey) {
+    const cookieHeader = request.headers.get('cookie') || ''
+    const match = cookieHeader.match(/(?:^|;\s*)sp_api_key=([^;]*)/)
+    if (match?.[1]) {
+      apiKey = decodeURIComponent(match[1])
+    }
+  }
+
   if (!apiKey) {
     return NextResponse.json(
       { error: 'Missing API key. Include X-API-Key header or Authorization: Bearer <key>' },

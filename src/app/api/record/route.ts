@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { authenticateRequest } from '@/lib/api-auth'
 import { generateUniqueCode } from '@/lib/utils-shipproof'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await authenticateRequest(request)
+    if (auth instanceof NextResponse) return auth
+
     const body = await request.json()
     const { orderId, buyerEmail, videoData, videoFilename } = body
 
@@ -45,6 +49,7 @@ export async function POST(request: NextRequest) {
         videoData: videoData || null,
         videoFilename: videoFilename || null,
         uniqueCode,
+        sellerId: auth.id,
         status: 'recorded',
       },
     })

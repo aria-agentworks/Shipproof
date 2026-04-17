@@ -21,7 +21,10 @@ import {
   Keyboard,
   ShieldAlert,
   Wifi,
+  Key,
+  Lock,
 } from 'lucide-react'
+import Link from 'next/link'
 
 // State machine:
 // idle → (scan/manual) → ready → (tap record) → recording → (tap stop) → preview → (enter email) → sending → done
@@ -60,6 +63,72 @@ export default function RecordPage() {
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
   const [recordingTime, setRecordingTime] = useState(0)
   const [initializing, setInitializing] = useState(true)
+
+  // ---- Auth check ----
+  const [apiKeyInput, setApiKeyInput] = useState('')
+  const [authenticated, setAuthenticated] = useState(false)
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const match = document.cookie.match(/(?:^|;\s*)sp_api_key=([^;]*)/)
+      if (match) {
+        setAuthenticated(true)
+      }
+    }
+    checkAuth()
+  }, [])
+
+  const handleLogin = () => {
+    if (!apiKeyInput.trim()) return
+    document.cookie = `sp_api_key=${encodeURIComponent(apiKeyInput.trim())}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Strict`
+    setApiKeyInput('')
+    setAuthenticated(true)
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-950 text-white">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md bg-gray-900 border border-white/10">
+            <CardContent className="p-8 text-center space-y-6">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 flex items-center justify-center mx-auto border border-emerald-500/30">
+                <Lock className="w-8 h-8 text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Sign in to Record</h2>
+                <p className="text-sm text-gray-400 mt-1">
+                  Enter your ShipProof API key to record packing videos.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <input
+                  type="password"
+                  placeholder="sp_live_..."
+                  value={apiKeyInput}
+                  onChange={(e) => setApiKeyInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                  className="w-full h-11 px-4 rounded-lg bg-gray-800 border border-white/10 text-white text-sm font-mono placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
+                <Button
+                  onClick={handleLogin}
+                  disabled={!apiKeyInput.trim()}
+                  className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  Sign In
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500">
+                Don&apos;t have a key?{' '}
+                <Link href="/docs" className="text-emerald-400 hover:underline font-medium">
+                  Get one free on the Docs page
+                </Link>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   // Scanner state
   const [scannerError, setScannerError] = useState<string | null>(null)
