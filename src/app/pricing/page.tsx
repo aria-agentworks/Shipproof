@@ -278,7 +278,9 @@ export default function PricingPage() {
               },
               {
                 q: 'What payment methods do you accept?',
-                a: 'We accept all major credit/debit cards, UPI, net banking, and wallets via Razorpay.',
+                a: currency === 'INR'
+                  ? 'We accept all major credit/debit cards, UPI, net banking, and wallets via Razorpay.'
+                  : 'We accept all major credit and debit cards. Additional payment methods may be available in your region.',
               },
               {
                 q: 'Is there a free trial for paid plans?',
