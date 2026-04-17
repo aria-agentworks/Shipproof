@@ -469,10 +469,22 @@ export default function VerifyPage({ params }: { params: Promise<{ code: string 
           </Button>
         </div>
 
-        {/* Footer branding */}
-        <p className="text-center text-xs text-gray-400 pt-4">
-          Verified by {brandName} — Video proof that this order was packed with care.
-        </p>
+        {/* Powered by ShipProof - with signup CTA */}
+        <div className="text-center pt-6 pb-2 space-y-2">
+          <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+            <span>Powered by</span>
+            <Link href="/" className="font-semibold text-emerald-600 hover:text-emerald-700">
+              ShipProof
+            </Link>
+            <span>— Video proof for every shipment</span>
+          </div>
+          <p className="text-[11px] text-gray-300">
+            Are you a seller?{' '}
+            <Link href="/docs" className="text-emerald-500 hover:text-emerald-600 underline">
+              Protect your business with video verification
+            </Link>
+          </p>
+        </div>
       </main>
     </div>
   )

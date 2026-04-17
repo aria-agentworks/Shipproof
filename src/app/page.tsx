@@ -21,6 +21,8 @@ import {
   X,
   Key,
   Activity,
+  FileText,
+  BadgeCheck,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -68,6 +70,16 @@ const features = [
     icon: Lock,
     title: 'Enterprise Security',
     description: 'SOC2 compliant infrastructure. Data encrypted at rest and in transit. Role-based access.',
+  },
+  {
+    icon: FileText,
+    title: 'Verification Certificate',
+    description: 'Download a professional PDF certificate for every shipment. Include it in dispute responses, share with buyers, or keep for your records.',
+  },
+  {
+    icon: BadgeCheck,
+    title: 'Storefront Trust Badge',
+    description: 'Embed a "Verified by ShipProof" badge on your Shopify, Etsy, or website. Boost buyer confidence and increase conversion rates.',
   },
 ]
 

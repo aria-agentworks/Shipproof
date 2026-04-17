@@ -28,6 +28,7 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
+  FileText,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -416,6 +417,12 @@ export default function DashboardPage() {
                             )}
                             Resend
                           </Button>
+                          <Link href={`/api/certificate/${video.uniqueCode}`}>
+                            <Button variant="outline" size="sm" className="h-10">
+                              <FileText className="w-3 h-3 mr-1.5" />
+                              Certificate
+                            </Button>
+                          </Link>
                         </div>
                       </div>
 
@@ -493,6 +500,11 @@ export default function DashboardPage() {
                               <Mail className="w-4 h-4" />
                             )}
                           </Button>
+                          <Link href={`/api/certificate/${video.uniqueCode}`}>
+                            <Button variant="ghost" size="sm" title="Download certificate">
+                              <FileText className="w-4 h-4" />
+                            </Button>
+                          </Link>
                         </div>
                       </div>
 
