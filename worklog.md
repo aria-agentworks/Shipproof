@@ -217,3 +217,30 @@ Stage Summary:
 - Navigation updated in header (desktop + mobile) and landing page footer
 - Key files created: src/app/enterprise/page.tsx, src/app/docs/page.tsx
 - Key files modified: src/components/header.tsx, src/app/page.tsx
+
+---
+Task ID: 6
+Agent: Main Agent
+Task: Build marketing features - Certificate PDF, Trust Widget, Dispute Calculator, Powered-by footer
+
+Work Log:
+- Installed jspdf + qrcode packages for PDF generation
+- Launched 2 parallel subagents:
+  - Agent A: Built certificate PDF system (lib + API route + dashboard button)
+  - Agent B: Built widget, calculator, powered-by footer, landing page updates, header nav
+- Verified build passes (0 errors, 25+ routes)
+- Committed as 2323477, pushed to GitHub
+- Verified all features live on Netlify:
+  - /calculator returns 200 (dispute calculator page)
+  - /widget.js returns 200 (embeddable trust widget)
+  - /api/certificate/777LSCGW returns 200 with valid PDF (134KB, 1 page)
+  - Certificate API returns 401 without auth (secured)
+  - Landing page shows new feature cards
+
+Stage Summary:
+- Verification Certificate PDF: Professional A4 PDF with ShipProof seal, QR code, order details, verification status, SHA-256 hash watermark. Downloadable from dashboard via cookie auth.
+- Trust Widget: Standalone JS file at /widget.js - one-line embed for Shopify/Etsy/WordPress, shadow DOM, close button with localStorage persistence.
+- Dispute Calculator: /calculator page with real-time ROI calculation, Google Ads optimized landing page.
+- Powered by ShipProof: Viral footer on /v/[code] pages with signup CTA linking to /docs.
+- Landing page: Added Certificate + Trust Widget feature cards (now 8 features).
+- Header: Added Calculator nav link (desktop + mobile).
