@@ -26,8 +26,9 @@ model Seller {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  videos   Video[]
-  payments Payment[]
+  videos        Video[]
+  payments      Payment[]
+  shopifyShops  ShopifyShop[]
 
   @@index([apiKey])
   @@index([plan])
@@ -78,4 +79,19 @@ model Payment {
 
   @@index([planKey])
   @@index([status])
+}
+
+model ShopifyShop {
+  id          String   @id @default(cuid())
+  shopDomain  String   @unique
+  accessToken String
+  scope       String?
+  sellerId    String
+  seller      Seller   @relation(fields: [sellerId], references: [id])
+  isActive    Boolean  @default(true)
+  installedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([shopDomain])
+  @@index([sellerId])
 }
